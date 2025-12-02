@@ -57,24 +57,28 @@ function App(props: { onAnimationComplete: () => void }) {
         onAnimationComplete={completeAnimation}
       >
         <span style={{ fontSize: '2rem' }}>Max Kachimov</span>
-        <motion.a
-          style={{
-            width: '1.8rem',
-            height: '1.8rem',
-            marginLeft: '1rem',
-            marginTop: 'auto',
-            marginBottom: 'auto',
-            backgroundSize: 'contain',
-            backgroundRepeat: 'no-repeat',
-            cursor: 'pointer',
-            backgroundImage: animationDone ? `url(${LINKEDIN_LOGO})` : 'none',
-          }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={animationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, ease: 'easeOut' }}
-          href={LINKEDIN_URL}
-          target="_blank"
-        ></motion.a>
+        {animationDone && (
+          <motion.a
+            style={{
+              width: '1.8rem',
+              height: '1.8rem',
+              marginLeft: '1rem',
+              marginTop: 'auto',
+              marginBottom: 'auto',
+              backgroundSize: 'contain',
+              backgroundRepeat: 'no-repeat',
+              cursor: 'pointer',
+              backgroundImage: animationDone ? `url(${LINKEDIN_LOGO})` : 'none',
+            }}
+            initial={{ opacity: 0, y: 20 }}
+            animate={
+              animationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
+            }
+            transition={{ duration: 0.6, ease: 'easeOut' }}
+            href={LINKEDIN_URL}
+            target="_blank"
+          ></motion.a>
+        )}
       </motion.div>
     </header>
   );
