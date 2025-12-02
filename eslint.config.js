@@ -31,6 +31,7 @@ export default [
       'react-refresh': reactRefresh,
       'unused-imports': unusedImports,
     },
+    extends: ['eslint:recommended', 'plugin:@typescript-eslint/recommended'],
     rules: {
       ...js.configs.recommended.rules,
       ...react.configs.recommended.rules,

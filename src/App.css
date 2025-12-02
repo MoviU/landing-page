@@ -1,0 +1,52 @@
+@font-face {
+  font-family: 'Skyer Monolite';
+  src: url('/fonts/skyer-400.otf') format('opentype');
+  font-weight: normal;
+  font-style: normal;
+}
+
+.logo-font {
+  font-family: 'Skyer Monolite', sans-serif;
+}
+
+body {
+  margin: 0;
+  background: #0c0202;
+  color: white;
+  font-family: 'Skyer Monolite', sans-serif;
+}
+
+.page {
+  min-height: 100vh;
+  overflow: hidden;
+}
+
+.header {
+  width: 100%;
+    z-index: 1000;
+
+}
+
+.header-placeholder {
+  height: 60px;
+}
+
+.animated-top {
+  font-weight: bold;
+}
+
+.title-gradient {
+  background: #702727;
+  background: -webkit-linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  background: -moz-linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  background: linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  filter: progid:DXImageTransform.Microsoft.gradient(
+          startColorstr="#702727",
+          endColorstr="#17A370",
+          GradientType=1
+  );
+  background-clip: text;
+  -webkit-background-clip: text; /* For WebKit browsers */
+  color: transparent;
+  -webkit-text-fill-color: transparent; /* For WebKit browsers */
+}

@@ -10,6 +10,7 @@ if (!rootElement) {
 }
 
 createRoot(rootElement).render(
+  // @ts-ignore
   <StrictMode>
     <App />
   </StrictMode>
