@@ -20,7 +20,12 @@ export default function HireMeImpact() {
   const metrics = [
     { label: 'Stock Price', value: 342, suffix: '%', icon: TrendingUpIcon },
     { label: 'Performance', value: 4, suffix: 'x', icon: RocketLaunchIcon },
-    { label: 'Code Quality', value: 200, suffix: ' ↑', icon: EmojiEventsIcon },
+    {
+      label: 'Features released',
+      value: 178,
+      suffix: ' ↑',
+      icon: EmojiEventsIcon,
+    },
     {
       label: 'Dev Happiness',
       value: Infinity,
@@ -52,9 +57,9 @@ export default function HireMeImpact() {
 
   const clickAnimations = [
     { rotate: 360 },
-    { y: -20, transition: { yoyo: 2, duration: 0.3 } },
+    { rotate: -360 },
     { scale: [1, 1.2, 1], transition: { duration: 0.4 } },
-    { rotateY: 180, transition: { duration: 0.6 } },
+    { rotateY: 360, transition: { duration: 0.6 } },
   ];
 
   return (
@@ -67,7 +72,7 @@ export default function HireMeImpact() {
         justifyContent: 'center',
         p: 4,
         textAlign: 'center',
-        background: '#0b0404',
+        background: 'transparent',
       }}
     >
       <Typography

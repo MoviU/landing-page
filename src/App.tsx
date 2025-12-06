@@ -2,23 +2,27 @@ import './App.css';
 import Intro from './Header';
 import HireMeImpact from './HireMeImpact';
 import ResumePreview from './ResumePreview';
-import { useState, useRef, useEffect } from 'react';
-import { motion, useAnimation } from 'framer-motion';
+import { useState, useRef, useEffect, Component } from 'react';
+import { motion, useScroll, useTransform } from 'framer-motion';
+import Background from './Background';
 
 function App() {
   const [showContent, setShowContent] = useState(false);
   const [showArrow, setShowArrow] = useState(true);
   const pdfUrl = import.meta.env.VITE_PDF_URL;
 
-  const metricsRef = useRef<HTMLDivElement>(null);
-  const resumeRef = useRef<HTMLDivElement>(null);
+  const metricsRef = useRef<HTMLInputElement>(null);
+  const resumeRef = useRef<HTMLInputElement>(null);
 
-  // Controls for header animation
-  const headerControls = useAnimation();
+  const { scrollY } = useScroll();
 
-  // Scroll to the next section dynamically
+  const headerOpacity = useTransform(scrollY, [0, 100], [1, 0]);
+
   const scrollToNext = () => {
-    if (metricsRef.current && window.scrollY < metricsRef.current.offsetTop) {
+    if (
+      metricsRef.current &&
+      window.scrollY < metricsRef.current.offsetTop - 50
+    ) {
       metricsRef.current.scrollIntoView({ behavior: 'smooth' });
     } else if (resumeRef.current) {
       resumeRef.current.scrollIntoView({ behavior: 'smooth' });
@@ -31,33 +35,33 @@ function App() {
       const viewportHeight = window.innerHeight;
       const fullHeight = document.body.scrollHeight;
 
-      // Hide bottom arrow near bottom
-      setShowArrow(scrollY + viewportHeight < fullHeight - 10);
-
-      // Fade header based on scroll
-      if (scrollY > 50) {
-        headerControls.start({ opacity: 0, transition: { duration: 0.5 } });
-      } else {
-        headerControls.start({ opacity: 1, transition: { duration: 0.5 } });
-      }
+      // Hide bottom arrow if we are within 100px of the document bottom
+      setShowArrow(scrollY + viewportHeight < fullHeight - 100);
     };
 
-    window.addEventListener('scroll', handleScroll);
+    // Use a passive listener for better performance
+    window.addEventListener('scroll', handleScroll, { passive: true });
     return () => window.removeEventListener('scroll', handleScroll);
-  }, [headerControls]);
+  }, []);
 
   return (
     <div className="page" style={{ position: 'relative' }}>
-      {/* Animate header opacity */}
-      <motion.div animate={headerControls} style={{ marginBottom: '80px' }}>
-        <Intro onAnimationComplete={() => setShowContent(true)} />
-      </motion.div>
+      <Background>
+        <motion.div
+          style={{
+            opacity: headerOpacity,
+            marginBottom: '80px',
+          }}
+        >
+          <Intro onAnimationComplete={() => setShowContent(true)} />
+        </motion.div>
 
-      {showContent && (
-        <div ref={metricsRef}>
-          <HireMeImpact />
-        </div>
-      )}
+        {showContent && (
+          <div ref={metricsRef}>
+            <HireMeImpact />
+          </div>
+        )}
+      </Background>
 
       {showContent && pdfUrl && (
         <div ref={resumeRef}>

@@ -26,7 +26,7 @@ function App(props: { onAnimationComplete: () => void }) {
   }, []);
 
   return (
-    <header className="header" style={{ position: 'fixed', top: '2%' }}>
+    <div className="header" style={{ position: 'fixed', top: '2%' }}>
       {/* Empty space reserved for final position */}
       <motion.div
         ref={textRef}
@@ -62,30 +62,26 @@ function App(props: { onAnimationComplete: () => void }) {
         onAnimationComplete={completeAnimation}
       >
         <span style={{ fontSize: '2rem' }}>Max Kachimov</span>
-        {animationDone && (
-          <motion.a
-            style={{
-              width: '1.8rem',
-              height: '1.8rem',
-              marginLeft: '1rem',
-              marginTop: 'auto',
-              marginBottom: 'auto',
-              backgroundSize: 'contain',
-              backgroundRepeat: 'no-repeat',
-              cursor: 'pointer',
-              backgroundImage: animationDone ? `url(${LINKEDIN_LOGO})` : 'none',
-            }}
-            initial={{ opacity: 0, y: 20 }}
-            animate={
-              animationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }
-            }
-            transition={{ duration: 0.6, ease: 'easeOut' }}
-            href={LINKEDIN_URL}
-            target="_blank"
-          ></motion.a>
-        )}
+        <motion.a
+          style={{
+            width: '1.8rem',
+            height: '1.8rem',
+            marginLeft: '1rem',
+            marginTop: 'auto',
+            marginBottom: 'auto',
+            backgroundSize: 'contain',
+            backgroundRepeat: 'no-repeat',
+            cursor: 'pointer',
+            backgroundImage: animationDone ? `url(${LINKEDIN_LOGO})` : 'none',
+          }}
+          initial={{ opacity: 0, y: 20 }}
+          animate={animationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
+          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
+          href={LINKEDIN_URL}
+          target="_blank"
+        ></motion.a>
       </motion.div>
-    </header>
+    </div>
   );
 }
 
