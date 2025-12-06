@@ -89,13 +89,13 @@ export default function HireMeImpact() {
       {/* ↓↓↓ SIMPLE "COL-6 / COL-3" GRID ↓↓↓ */}
       <Box
         sx={{
-          width: '100%',
+          width: '80%',
           maxWidth: 1100,
           display: 'grid',
           gap: 3,
           gridTemplateColumns: {
             xs: 'repeat(1, 1fr)', // col-12
-            sm: 'repeat(2, 1fr)', // col-6
+            sm: 'repeat(1, 1fr)', // col-6
             lg: 'repeat(4, 1fr)', // col-3
           },
         }}
