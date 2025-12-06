@@ -36,8 +36,8 @@
     /* 1. MOBILE DEFAULT:
        Use 'vmax' so it scales relative to the largest side of the screen.
        This ensures the blobs are big enough on phones but not overwhelming. */
-    width: 60vmax;
-    height: 60vmax;
+    width: 80vmax;
+    height: 80vmax;
 
     /* 2. REDUCE BLUR ON MOBILE:
        50px blur is too much for small screens; it washes out the color. */
@@ -48,8 +48,8 @@
 /* On screens larger than 768px (Tablets/Desktops), return to massive sizes */
 @media (min-width: 768px) {
     .aurora-glow {
-        width: 100%;
-        height: 100%;
+        width: 1000px;
+        height: 1000px;
         filter: blur(100px);
     }
 }
