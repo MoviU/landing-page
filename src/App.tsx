@@ -49,7 +49,7 @@ function App() {
   return (
     <div className="page" style={{ position: 'relative' }}>
       {/* Animate header opacity */}
-      <motion.div animate={headerControls}>
+      <motion.div animate={headerControls} style={{ marginBottom: '80px' }}>
         <Intro onAnimationComplete={() => setShowContent(true)} />
       </motion.div>
 

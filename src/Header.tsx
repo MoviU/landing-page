@@ -20,7 +20,7 @@ function App(props: { onAnimationComplete: () => void }) {
         setIsIntoAnimation(false);
         sessionStorage.setItem('introWasAlreadyShown', String(1));
       },
-      !Number(sessionStorage.getItem('introWasAlreadyShown')) ? 2000 : 200
+      !Number(sessionStorage.getItem('introWasAlreadyShown')) ? 2000 : 100
     );
     return () => clearTimeout(timer);
   }, []);
@@ -53,7 +53,12 @@ function App(props: { onAnimationComplete: () => void }) {
               }
             : {}
         }
-        transition={{ duration: 1.2, ease: 'easeInOut' }}
+        transition={{
+          duration: !Number(sessionStorage.getItem('introWasAlreadyShown'))
+            ? 1.2
+            : 0.6,
+          ease: 'easeInOut',
+        }}
         onAnimationComplete={completeAnimation}
       >
         <span style={{ fontSize: '2rem' }}>Max Kachimov</span>
