@@ -36,12 +36,12 @@
     /* 1. MOBILE DEFAULT:
        Use 'vmax' so it scales relative to the largest side of the screen.
        This ensures the blobs are big enough on phones but not overwhelming. */
-    width: 80vmax;
-    height: 80vmax;
+    width: 100vmax;
+    height: 100vmax;
 
     /* 2. REDUCE BLUR ON MOBILE:
        50px blur is too much for small screens; it washes out the color. */
-    filter: blur(150px);
+    filter: blur(100px);
 }
 
 /* --- DESKTOP OVERRIDE --- */
