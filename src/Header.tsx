@@ -27,7 +27,7 @@ function App(props: { onAnimationComplete: () => void }) {
       left: '50%',
       x: '-50%',
       y: '-50%',
-      scale: 2,
+      scale: 1.4,
       position: 'fixed',
     },
     final: {
@@ -35,7 +35,7 @@ function App(props: { onAnimationComplete: () => void }) {
       left: '2%',
       x: 0,
       y: 0,
-      scale: 0.8,
+      scale: 1,
       position: 'fixed',
       display: 'flex',
       flexDirection: 'row',
