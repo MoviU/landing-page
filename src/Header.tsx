@@ -15,15 +15,38 @@ function App(props: { onAnimationComplete: () => void }) {
   };
 
   useEffect(() => {
-    const timer = setTimeout(
-      () => {
-        setIsIntoAnimation(false);
-        sessionStorage.setItem('introWasAlreadyShown', String(1));
-      },
-      !Number(sessionStorage.getItem('introWasAlreadyShown')) ? 2000 : 100
-    );
+    const timer = setTimeout(() => {
+      setIsIntoAnimation(false);
+    }, 2000);
     return () => clearTimeout(timer);
   }, []);
+
+  const variants = {
+    initial: {
+      top: '50%',
+      left: '50%',
+      x: '-50%',
+      y: '-50%',
+      scale: 2,
+      position: 'fixed',
+    },
+    final: {
+      top: '2%',
+      left: '2%',
+      x: 0,
+      y: 0,
+      scale: 0.8,
+      position: 'fixed',
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      transition: {
+        duration: 1.2,
+        ease: 'easeInOut',
+        delay: 1.0, // ← Use Framer’s built-in delay (optional)
+      },
+    },
+  };
 
   return (
     <div className="header" style={{ position: 'fixed', top: '2%' }}>
@@ -31,44 +54,27 @@ function App(props: { onAnimationComplete: () => void }) {
       <motion.div
         ref={textRef}
         className="animated-top title-gradient"
-        initial={{
-          top: '50%',
-          left: '50%',
-          x: '-50%',
-          y: '-50%',
-          position: 'fixed',
-          scale: 2,
-        }}
-        animate={
-          !isIntoAnimation
-            ? {
-                top: '2%',
-                left: '2%',
-                x: 0,
-                y: 0,
-                scale: 0.8,
-                position: 'fixed',
-                display: 'flex',
-                flexDirection: 'row',
-              }
-            : {}
-        }
-        transition={{
-          duration: !Number(sessionStorage.getItem('introWasAlreadyShown'))
-            ? 1.2
-            : 0.6,
-          ease: 'easeInOut',
-        }}
+        variants={variants}
+        initial="initial"
+        animate="final"
         onAnimationComplete={completeAnimation}
       >
-        <span style={{ fontSize: '2rem' }}>Max Kachimov</span>
+        <div
+          style={{
+            fontSize: '2rem',
+            display: 'flex',
+            alignItems: 'center',
+            lineHeight: 1,
+            whiteSpace: 'nowrap',
+          }}
+        >
+          Max Kachimov
+        </div>
         <motion.a
           style={{
             width: '1.8rem',
             height: '1.8rem',
             marginLeft: '1rem',
-            marginTop: 'auto',
-            marginBottom: 'auto',
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
             cursor: 'pointer',

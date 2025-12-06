@@ -46,7 +46,7 @@ function App() {
 
   return (
     <div className="page" style={{ position: 'relative' }}>
-      <Background />
+      {showContent && <Background />}
 
       <div style={{ position: 'relative', zIndex: 10 }}>
         <motion.div
