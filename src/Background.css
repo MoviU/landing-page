@@ -1,16 +1,18 @@
-/* AuroraBackground.css - Framer Motion Ready */
-
-/* --- Container Setup (Same) --- */
+/* --- Container Setup --- */
 .aurora-container {
+    /* Changed to absolute to fill the parent wrapper */
+    position: absolute;
+    top: 0;
+    left: 0;
     width: 100%;
+    height: 100%; /* Stretches to match the parent's height */
+
     background-color: #0c0202;
-    position: relative;
-    overflow: hidden;
-    min-height: 100vh;
-    height: auto;
+    overflow: hidden; /* Clips the glows so they don't cause scrollbars */
+    z-index: 0; /* Sits at the bottom */
 }
 
-/* --- Dark Overlay (Same) --- */
+/* --- Dark Overlay --- */
 .dark-overlay {
     position: absolute;
     top: 0;
@@ -18,10 +20,10 @@
     width: 100%;
     height: 100%;
     background-color: rgba(0, 0, 0, 0.4);
-    z-index: 5;
+    z-index: 5; /* Above glows, below content */
 }
 
-/* --- Base Glow Element Styling (Crucial: Keep original positioning) --- */
+/* --- Base Glow Element Styling --- */
 .aurora-glow {
     position: absolute;
     width: 1000px;
@@ -30,22 +32,18 @@
     opacity: 0.7;
     filter: blur(50px);
     z-index: 1;
-    will-change: transform, opacity;
+    will-change: transform, opacity; /* Performance optimization */
 }
 
-/* --- Specific Glow Colors and Starting Positions --- */
-
+/* --- Specific Glow Colors --- */
 .glow-1 {
-    /* Maroon: rgba(112, 39, 39, 1) */
     background: radial-gradient(circle, rgba(112, 39, 39, 0.8) 0%, transparent 70%);
     top: 10%;
     left: 5%;
-    /* Initial transform is set here, but FRAMER MOTION will take over the animation */
     transform: translate(-50%, -50%);
 }
 
 .glow-2 {
-    /* Blue: rgba(4, 71, 125, 1) */
     background: radial-gradient(circle, rgba(4, 71, 125, 0.7) 0%, transparent 70%);
     bottom: 5%;
     right: 15%;
@@ -53,16 +51,8 @@
 }
 
 .glow-3 {
-    /* Teal/Green: rgba(23, 163, 112, 1) */
     background: radial-gradient(circle, rgba(23, 163, 112, 0.7) 0%, transparent 70%);
     top: 50%;
     right: 50%;
     transform: translate(0%, -50%);
-}
-
-/* --- Content Overlay (Same) --- */
-.content-overlay {
-    position: absolute;
-    z-index: 10;
-    width: 100%;
 }

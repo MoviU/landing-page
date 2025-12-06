@@ -27,7 +27,6 @@ export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
         alignItems: 'center',
         justifyContent: 'center',
         p: 4,
-        background: 'rgba(240,240,240,0.1)',
       }}
     >
       {/* Header */}
