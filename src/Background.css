@@ -9,7 +9,7 @@
     width: 100%;
     height: 100%;
 
-    background-color: #0c0202;
+    background-color: #1a0a0a;
     overflow: hidden;
     z-index: 0;
 }
@@ -21,7 +21,7 @@
     left: 0;
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.1);
+    background-color: rgba(0, 0, 0, 0.2);
     z-index: 5;
 }
 
