@@ -70,7 +70,7 @@ export default function HireMeImpact() {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        p: 4,
+        p: { xs: 2, sm: 3, md: 4 },
         textAlign: 'center',
         background: 'transparent',
       }}
@@ -81,7 +81,11 @@ export default function HireMeImpact() {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.7 }}
         variant="h3"
-        sx={{ mb: 6, ...gradientText }}
+        sx={{ 
+          mb: { xs: 4, sm: 5, md: 6 },
+          fontSize: { xs: '1.75rem', sm: '2.25rem', md: '3rem' },
+          ...gradientText 
+        }}
       >
         What Happens When You Hire Me
       </Typography>
@@ -89,14 +93,16 @@ export default function HireMeImpact() {
       {/* ↓↓↓ SIMPLE "COL-6 / COL-3" GRID ↓↓↓ */}
       <Box
         sx={{
-          width: '80%',
+          width: { xs: '95%', sm: '80%' },
           maxWidth: 1100,
           display: 'grid',
-          gap: 3,
+          gap: { xs: 1.5, sm: 2, md: 3 },
           gridTemplateColumns: {
-            xs: 'repeat(1, 1fr)', // col-12
-            sm: 'repeat(1, 1fr)', // col-6
-            lg: 'repeat(4, 1fr)', // col-3
+            xs: 'repeat(2, 1fr)', // col-6 (2 columns on mobile)
+            sm: 'repeat(2, 1fr)', // col-6
+            md: 'repeat(2, 1fr)', // col-6
+            lg: 'repeat(2, 1fr)', // col-6 (keep 2 columns at 1200px)
+            xl: 'repeat(4, 1fr)', // col-3 (4 columns only at 1536px+)
           },
         }}
       >
@@ -122,23 +128,38 @@ export default function HireMeImpact() {
                   default: { duration: 0.45, delay: i * 0.08 },
                 }}
                 sx={{
-                  borderRadius: 3,
+                  borderRadius: { xs: 1.5, sm: 2, md: 3 },
                   background: 'rgba(255,255,255,0.95)',
-                  boxShadow: '0 8px 25px rgba(0,0,0,0.15)',
-                  p: 3,
+                  boxShadow: { xs: '0 4px 15px rgba(0,0,0,0.1)', sm: '0 8px 25px rgba(0,0,0,0.15)' },
+                  p: { xs: 1, sm: 2, md: 3 },
                   textAlign: 'center',
                 }}
               >
-                <CardContent>
-                  <Box sx={{ mb: 1, color: '#07477D' }}>
-                    <Icon fontSize="large" />
+                <CardContent sx={{ p: { xs: '8px !important', sm: '10px !important', md: '10px !important' } }}>
+                  <Box sx={{ mb: { xs: 0.25, sm: 0.5, md: 1 }, color: '#07477D' }}>
+                    <Icon sx={{ fontSize: { xs: '1.5rem', sm: '1.75rem', md: '2rem' } }} />
                   </Box>
 
-                  <Typography variant="h6" sx={gradientText}>
+                  <Typography 
+                    variant="h6" 
+                    sx={{ 
+                      ...gradientText,
+                      fontSize: { xs: '0.7rem', sm: '0.875rem', md: '1.25rem' },
+                      mb: { xs: 0.25, sm: 0.5, md: 1 },
+                      lineHeight: { xs: 1.2, sm: 1.4 },
+                    }}
+                  >
                     {m.label}
                   </Typography>
 
-                  <Typography variant="h4" sx={{ ...gradientText }}>
+                  <Typography 
+                    variant="h4" 
+                    sx={{ 
+                      ...gradientText,
+                      fontSize: { xs: '1rem', sm: '1.5rem', md: '2.5rem' },
+                      lineHeight: { xs: 1.2, sm: 1.3 },
+                    }}
+                  >
                     {counts[i] === Infinity ? '∞' : counts[i] + m.suffix}
                   </Typography>
                 </CardContent>

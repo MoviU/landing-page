@@ -29,6 +29,11 @@ function App(props: { onAnimationComplete: () => void }) {
       y: '-50%',
       scale: 1.4,
       position: 'fixed',
+      display: 'flex',
+      flexDirection: 'row',
+      alignItems: 'center',
+      width: 'fit-content',
+      minWidth: 'fit-content',
     },
     final: {
       top: '2%',
@@ -40,24 +45,43 @@ function App(props: { onAnimationComplete: () => void }) {
       display: 'flex',
       flexDirection: 'row',
       alignItems: 'center',
+      width: 'fit-content',
+      minWidth: 'fit-content',
       transition: {
         duration: 1.2,
         ease: 'easeInOut',
-        delay: 1.0, // ← Use Framer’s built-in delay (optional)
+        delay: 1.0,
       },
     },
   };
 
   return (
-    <div className="header" style={{ position: 'fixed', top: '2%' }}>
-      {/* Empty space reserved for final position */}
+    <div className="header" style={{ position: 'fixed', top: '2%', left: '2%', width: 'auto' }}>
       <motion.div
         ref={textRef}
         className="animated-top title-gradient"
         variants={variants}
         initial="initial"
-        animate="final"
+        animate={{
+          ...variants.final,
+          x: animationDone ? '-0.1rem' : 0,
+        }}
         onAnimationComplete={completeAnimation}
+        style={{
+          display: 'flex',
+          alignItems: 'center',
+          width: 'fit-content',
+          minWidth: 'fit-content',
+          willChange: 'transform',
+        }}
+        transition={{
+          ...variants.final.transition,
+          x: {
+            duration: 0.6,
+            ease: 'easeInOut',
+            delay: animationDone ? 0.5 : 0,
+          },
+        }}
       >
         <div
           style={{
@@ -66,26 +90,35 @@ function App(props: { onAnimationComplete: () => void }) {
             alignItems: 'center',
             lineHeight: 1,
             whiteSpace: 'nowrap',
+            fontFamily: "'Skyer Monolite', sans-serif",
+            fontWeight: 'bold',
+            width: 'fit-content',
+            minWidth: 'fit-content',
           }}
         >
           Max Kachimov
         </div>
         <motion.a
           style={{
-            width: '1.8rem',
+            width: animationDone ? '1.8rem' : '0',
             height: '1.8rem',
-            marginLeft: '1rem',
+            marginLeft: animationDone ? '1rem' : '0',
             backgroundSize: 'contain',
             backgroundRepeat: 'no-repeat',
+            backgroundPosition: 'center',
             cursor: 'pointer',
-            backgroundImage: animationDone ? `url(${LINKEDIN_LOGO})` : 'none',
+            backgroundImage: `url(${LINKEDIN_LOGO})`,
+            flexShrink: 0,
+            display: 'block',
+            overflow: 'hidden',
           }}
-          initial={{ opacity: 0, y: 20 }}
-          animate={animationDone ? { opacity: 1, y: 0 } : { opacity: 0, y: 20 }}
-          transition={{ duration: 0.6, ease: 'easeOut', delay: 0.5 }}
+          initial={{ opacity: 0, scale: 0.8, width: 0 }}
+          animate={animationDone ? { opacity: 1, scale: 1, width: '1.8rem' } : { opacity: 0, scale: 0.8, width: 0 }}
+          transition={{ duration: 0.6, ease: 'easeInOut', delay: 0.5 }}
           href={LINKEDIN_URL}
           target="_blank"
-        ></motion.a>
+          aria-label="LinkedIn Profile"
+        />
       </motion.div>
     </div>
   );

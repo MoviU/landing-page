@@ -45,14 +45,18 @@ function App() {
   }, []);
 
   return (
-    <div className="page" style={{ position: 'relative' }}>
+    <div 
+      className={`page ${!showContent ? 'animation-in-progress' : ''}`}
+      style={{ 
+        position: 'relative',
+      }}
+    >
       {showContent && <Background />}
 
       <div style={{ position: 'relative', zIndex: 10 }}>
         <motion.div
           style={{
             opacity: headerOpacity,
-            marginBottom: '80px',
           }}
         >
           <Intro onAnimationComplete={() => setShowContent(true)} />

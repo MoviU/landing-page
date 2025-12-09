@@ -3,6 +3,7 @@
   src: url('/fonts/skyer-400.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
+  font-display: swap; /* Prevents layout shift during font load */
 }
 
 /* Add this to your main CSS file (e.g., App.css or index.css) */
@@ -32,7 +33,12 @@ body {
 }
 
 .page {
+  overflow-x: hidden;
+}
+
+.page.animation-in-progress {
   overflow: hidden;
+  height: 100vh;
 }
 
 .header {
