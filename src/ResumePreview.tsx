@@ -1,52 +1,91 @@
-import { Box, Card, CardContent, Typography, Button, CircularProgress, useTheme, useMediaQuery } from '@mui/material';
-import { motion } from 'framer-motion';
+import {
+  Box,
+  Card,
+  CardContent,
+  Typography,
+  Button,
+  CircularProgress,
+  useTheme,
+  useMediaQuery,
+  IconButton,
+} from '@mui/material';
+import { motion, AnimatePresence } from 'framer-motion';
 import PictureAsPdfIcon from '@mui/icons-material/PictureAsPdf';
 import DownloadIcon from '@mui/icons-material/Download';
+import NavigateBeforeIcon from '@mui/icons-material/NavigateBefore';
+import NavigateNextIcon from '@mui/icons-material/NavigateNext';
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 
-// Set up PDF.js worker to use local file from public folder
+// Set up PDF.js worker
 pdfjs.GlobalWorkerOptions.workerSrc = '/pdf.worker.min.mjs';
 
 type ResumePreviewProps = {
-  pdfUrl: string; // URL or public path to your PDF
+  pdfUrl: string;
 };
 
 export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
   const [numPages, setNumPages] = useState<number | null>(null);
   const [pageNumber, setPageNumber] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const [pageWidth, setPageWidth] = useState<number>(800);
+  const [error, setError] = useState(false);
+  const [pageWidth, setPageWidth] = useState<number>(0);
+  const [isLowPerformance, setIsLowPerformance] = useState(false);
+
   const containerRef = useRef<HTMLDivElement>(null);
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const isTablet = useMediaQuery(theme.breakpoints.down('md'));
 
-  // Calculate high-quality scale based on device pixel ratio
-  // This ensures crisp rendering on retina/high-DPI displays
-  const getHighQualityScale = () => {
-    const devicePixelRatio = window.devicePixelRatio || 1;
-    // Use 2-3x scale for high-quality rendering
-    // Higher scale = better quality but more memory usage
-    return Math.max(devicePixelRatio * 2, 2.5);
+  // 1. Performance Detection: Identify slow hardware
+  useEffect(() => {
+    const checkPerformance = () => {
+      // @ts-ignore - navigator.deviceMemory is experimental (RAM in GB)
+      const ram = navigator.deviceMemory || 8;
+      const cores = navigator.hardwareConcurrency || 4;
+
+      // If device has < 4GB RAM or < 4 CPU cores, flag as low performance
+      if (ram < 4 || cores < 4) {
+        setIsLowPerformance(true);
+      }
+    };
+    checkPerformance();
+  }, []);
+
+  // 2. Adaptive Scaling: Calculate resolution based on hardware and screen
+  const getRenderingScale = () => {
+    if (isLowPerformance) return 1.0; // Minimal RAM usage
+    if (isMobile) return 1.3; // Balanced for small screens
+    return 1.8; // High quality for desktop, capped to prevent lag
   };
 
-  // Calculate page width based on container
+  // 3. Dynamic Width: Ensuring 100% container fit
   useEffect(() => {
-    const updatePageWidth = () => {
+    const updateWidth = () => {
       if (containerRef.current) {
-        const containerWidth = containerRef.current.offsetWidth;
-        // Subtract padding (16px on each side = 32px total) and border
-        const availableWidth = containerWidth - 32 - 4; // padding + border
-        setPageWidth(Math.max(300, availableWidth)); // Minimum 300px
+        setPageWidth(containerRef.current.offsetWidth);
       }
     };
 
-    updatePageWidth();
-    window.addEventListener('resize', updatePageWidth);
-    return () => window.removeEventListener('resize', updatePageWidth);
+    updateWidth();
+    window.addEventListener('resize', updateWidth);
+    return () => window.removeEventListener('resize', updateWidth);
   }, []);
+
+  const onDocumentLoadSuccess = ({ numPages }: { numPages: number }) => {
+    setNumPages(numPages);
+    setLoading(false);
+    setError(false);
+  };
+
+  const documentOptions = useMemo(
+    () => ({
+      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
+      cMapPacked: true,
+      standardFontDataUrl:
+        'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
+    }),
+    []
+  );
 
   const gradientText = {
     background:
@@ -58,28 +97,6 @@ export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
     fontWeight: 900,
   };
 
-  function onDocumentLoadSuccess({ numPages }: { numPages: number }) {
-    setNumPages(numPages);
-    setLoading(false);
-    setError(null);
-  }
-
-  function onDocumentLoadError(error: Error) {
-    setError('Failed to load PDF. Please try again later.');
-    setLoading(false);
-    console.error('Error loading PDF:', error);
-  }
-
-  // Memoize document options to prevent unnecessary reloads
-  const documentOptions = useMemo(
-    () => ({
-      cMapUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/cmaps/',
-      cMapPacked: true,
-      standardFontDataUrl: 'https://cdn.jsdelivr.net/npm/pdfjs-dist@3.11.174/standard_fonts/',
-    }),
-    []
-  );
-
   return (
     <Box
       sx={{
@@ -88,39 +105,29 @@ export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
         flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
-        p: { xs: 2, sm: 3, md: 4 },
+        p: { xs: 2, md: 4 },
       }}
     >
-      {/* Header */}
       <Typography
         component={motion.div}
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
         variant="h3"
-        sx={{ 
-          mb: { xs: 3, sm: 4, md: 6 }, 
-          fontSize: { xs: '2rem', sm: '2.5rem', md: '3rem' },
-          ...gradientText 
-        }}
+        sx={{ mb: 4, fontSize: { xs: '2rem', md: '3rem' }, ...gradientText }}
       >
         My Resume
       </Typography>
 
-      {/* PDF Preview Card */}
       <Card
         component={motion.div}
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.7 }}
-        whileHover={{ scale: isMobile ? 1 : 1.02 }}
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
         sx={{
           width: '100%',
-          maxWidth: { xs: '100%', sm: 600, md: 800 },
-          borderRadius: { xs: 2, sm: 3, md: 4 },
-          boxShadow: '0 8px 30px rgba(0,0,0,0.15)',
+          maxWidth: 800,
+          borderRadius: 4,
+          boxShadow: '0 12px 40px rgba(0,0,0,0.12)',
           overflow: 'hidden',
-          mb: { xs: 2, sm: 3, md: 4 },
         }}
       >
         <CardContent
@@ -128,154 +135,122 @@ export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
             display: 'flex',
             flexDirection: 'column',
             alignItems: 'center',
-            p: { xs: 2, sm: 3 },
+            p: { xs: 2, sm: 4 },
           }}
         >
-          <PictureAsPdfIcon sx={{ fontSize: { xs: 40, sm: 50, md: 60 }, color: '#B71C1C', mb: { xs: 1, sm: 2 } }} />
-          <Typography 
-            variant="h5" 
-            sx={{ 
-              mb: { xs: 1.5, sm: 2 },
-              fontSize: { xs: '1.25rem', sm: '1.5rem', md: '1.75rem' },
-              textAlign: 'center',
-            }}
-          >
-            Preview My PDF Resume
-          </Typography>
+          <PictureAsPdfIcon sx={{ fontSize: 50, color: '#B71C1C', mb: 1 }} />
 
-          {/* PDF Canvas Preview */}
-          <Box
-            ref={containerRef}
-            sx={{
-              width: '100%',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              border: '1px solid #ccc',
-              borderRadius: { xs: 1, sm: 2 },
-              p: { xs: 1, sm: 2 },
-              minHeight: { xs: 400, sm: 500 },
-              maxHeight: { xs: '70vh', sm: '80vh', md: 'none' },
-              overflow: 'auto',
-              justifyContent: 'center',
-              bgcolor: '#f5f5f5',
-              position: 'relative',
-              '&::-webkit-scrollbar': {
-                width: '8px',
-                height: '8px',
-              },
-              '&::-webkit-scrollbar-track': {
-                background: '#f1f1f1',
-                borderRadius: '4px',
-              },
-              '&::-webkit-scrollbar-thumb': {
-                background: '#888',
-                borderRadius: '4px',
-                '&:hover': {
-                  background: '#555',
-                },
-              },
-            }}
-          >
-            {loading && (
-              <Box
-                sx={{
-                  position: 'absolute',
+          {error ||
+            (isLowPerformance && (
+              <Typography variant="h5" sx={{ mb: 3, fontWeight: 600 }}>
+                {'You can donwload my resume here'}
+              </Typography>
+            ))}
+
+          {/* PDF Viewport */}
+          {!(error || isLowPerformance) && (
+            <Box
+              ref={containerRef}
+              sx={{
+                width: '100%',
+                minHeight: isLowPerformance ? 'auto' : { xs: 400, md: 600 },
+                display: 'flex',
+                flexDirection: 'column',
+                alignItems: 'center',
+                justifyContent: 'flex-start',
+                bgcolor: '#f0f0f0',
+                borderRadius: 2,
+                border: '1px solid #e0e0e0',
+                overflow: 'hidden',
+                position: 'relative',
+                // CENTER & SCALE FIX:
+                '& .react-pdf__Document': {
+                  width: '100%',
                   display: 'flex',
                   flexDirection: 'column',
                   alignItems: 'center',
-                  gap: 2,
-                  zIndex: 1,
-                }}
-              >
-                <CircularProgress />
-                <Typography variant="body2" color="text.secondary">
-                  Loading PDF...
-                </Typography>
-              </Box>
-            )}
-
-            {error && (
-              <Typography variant="body1" color="error" sx={{ textAlign: 'center', p: 2 }}>
-                {error}
-              </Typography>
-            )}
-
-            <Box
-              sx={{
-                display: loading || error ? 'none' : 'flex',
-                flexDirection: 'column',
-                alignItems: 'center',
-                width: '100%',
-                '& canvas': {
+                },
+                '& .react-pdf__Page__canvas': {
                   width: '100% !important',
                   height: 'auto !important',
-                  maxWidth: '100%',
-                  // Use auto rendering for smooth anti-aliased text
-                  imageRendering: 'auto',
-                  // Ensure high-quality rendering
-                  imageSmoothingEnabled: true,
-                  imageSmoothingQuality: 'high',
+                  display: 'block',
                 },
               }}
             >
+              <AnimatePresence>
+                {loading && (
+                  <Box
+                    component={motion.div}
+                    exit={{ opacity: 0 }}
+                    sx={{
+                      position: 'absolute',
+                      inset: 0,
+                      zIndex: 2,
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      bgcolor: '#f8f8f8',
+                      gap: 2,
+                    }}
+                  >
+                    <CircularProgress size={32} />
+                    <Typography variant="body2" color="text.secondary">
+                      Loading PDF...
+                    </Typography>
+                  </Box>
+                )}
+              </AnimatePresence>
+
               <Document
                 file={pdfUrl}
                 onLoadSuccess={onDocumentLoadSuccess}
-                onLoadError={onDocumentLoadError}
-                loading={null}
+                onLoadError={() => setError(true)}
                 options={documentOptions}
+                loading={null}
               >
                 <Page
                   pageNumber={pageNumber}
-                  renderTextLayer={false}
-                  renderAnnotationLayer={false}
-                  canvasBackground="white"
-                  // Width sets display size, scale multiplies rendering resolution
-                  // Higher scale = sharper text on high-DPI displays
                   width={pageWidth}
-                  scale={getHighQualityScale()}
-                  renderMode="canvas"
+                  scale={getRenderingScale()}
+                  renderTextLayer={false} // CRITICAL: Reduces memory/DOM complexity
+                  renderAnnotationLayer={false} // CRITICAL: Reduces memory usage
+                  loading={null}
                 />
               </Document>
             </Box>
+          )}
 
-            {/* Page Navigation */}
-            {numPages && numPages > 1 && (
+          {/* Navigation Controls */}
+          {!loading &&
+            !error &&
+            !isLowPerformance &&
+            numPages &&
+            numPages > 1 && (
               <Box
-                sx={{
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: { xs: 1, sm: 2 },
-                  mt: { xs: 1.5, sm: 2 },
-                  flexWrap: 'wrap',
-                  justifyContent: 'center',
-                }}
+                sx={{ display: 'flex', alignItems: 'center', gap: 2, mt: 2 }}
               >
-                <Button
-                  variant="outlined"
-                  size={isMobile ? 'small' : 'medium'}
+                <IconButton
                   disabled={pageNumber <= 1}
-                  onClick={() => setPageNumber((prev) => Math.max(1, prev - 1))}
+                  onClick={() => setPageNumber((prev) => prev - 1)}
+                  size="small"
                 >
-                  Previous
-                </Button>
-                <Typography variant="body2" sx={{ fontSize: { xs: '0.75rem', sm: '0.875rem' } }}>
+                  <NavigateBeforeIcon />
+                </IconButton>
+                <Typography variant="body2">
                   Page {pageNumber} of {numPages}
                 </Typography>
-                <Button
-                  variant="outlined"
-                  size={isMobile ? 'small' : 'medium'}
+                <IconButton
                   disabled={pageNumber >= numPages}
-                  onClick={() => setPageNumber((prev) => Math.min(numPages, prev + 1))}
+                  onClick={() => setPageNumber((prev) => prev + 1)}
+                  size="small"
                 >
-                  Next
-                </Button>
+                  <NavigateNextIcon />
+                </IconButton>
               </Box>
             )}
-          </Box>
 
-          {/* Download Button */}
+          {/* Action Button */}
           <Button
             variant="contained"
             color="primary"
@@ -290,7 +265,7 @@ export default function ResumePreview({ pdfUrl }: ResumePreviewProps) {
             download
             startIcon={<DownloadIcon />}
           >
-            Download Resume
+            Download
           </Button>
         </CardContent>
       </Card>
