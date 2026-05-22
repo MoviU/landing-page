@@ -290,6 +290,7 @@ body {
   gap: 8px;
   padding: 11px 18px;
   border-radius: 999px;
+  box-sizing: border-box;
   border: 1px solid var(--c-line-strong);
   font-size: 13px;
   letter-spacing: 0.08em;
