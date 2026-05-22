@@ -2,8 +2,10 @@
 
 /* --- Container Setup --- */
 .aurora-container {
-    /* Absolute positioning to act as a "sister" layer */
-    position: absolute;
+    /* Fixed so the aurora covers the viewport even while scrolling. On mobile
+       the stacked content is taller than one screen, so an absolute layer would
+       leave the lower half on a flat dark background. */
+    position: fixed;
     top: 0;
     left: 0;
     width: 100%;
