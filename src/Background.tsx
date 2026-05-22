@@ -24,11 +24,21 @@ const Background = () => {
   // We use useMemo to generate these random paths once on mount.
   // This prevents the glows from jumping to new random paths on every re-render.
   const glows = useMemo(() => {
-    return Array.from({ length: GLOW_COUNT }).map((_, i) => {
-      
+    // iOS Safari crashes/reloads (dark blank page) when too many large, blurred,
+    // animated layers exceed its per-tab GPU-memory budget. On small screens use
+    // far fewer glows and shorter travel paths (smaller repaint regions).
+    const isMobile =
+      typeof window !== 'undefined' &&
+      window.matchMedia('(max-width: 767px)').matches;
+    const count = isMobile ? 6 : GLOW_COUNT;
+    const xRange = isMobile ? X_RANGE * 0.5 : X_RANGE;
+    const yRange = isMobile ? Y_RANGE * 0.5 : Y_RANGE;
+
+    return Array.from({ length: count }).map((_, i) => {
+
       // 1. Create random motion paths covering the whole screen
-      const xPath = generateRandomPath(X_RANGE, 8); 
-      const yPath = generateRandomPath(Y_RANGE, 8); 
+      const xPath = generateRandomPath(xRange, 8);
+      const yPath = generateRandomPath(yRange, 8);
 
       // 2. Randomize timing so they don't move in sync
       const duration = random(MIN_DURATION, MAX_DURATION);

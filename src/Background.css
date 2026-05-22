@@ -33,15 +33,14 @@
     z-index: 1;
     will-change: transform, opacity;
 
-    /* 1. MOBILE DEFAULT:
-       Use 'vmax' so it scales relative to the largest side of the screen.
-       This ensures the blobs are big enough on phones but not overwhelming. */
-    width: 100vmax;
-    height: 100vmax;
-
-    /* 2. REDUCE BLUR ON MOBILE:
-       50px blur is too much for small screens; it washes out the color. */
-    filter: blur(100px);
+    /* MOBILE DEFAULT: keep the layer count and per-layer cost low — iOS Safari
+       has a hard per-tab GPU-memory cap and discards the page (dark blank
+       screen) when huge blurred, animated layers exceed it. Smaller blobs and a
+       smaller blur kernel keep us well under it. Background.tsx also renders
+       fewer glows on mobile. */
+    width: 70vmax;
+    height: 70vmax;
+    filter: blur(55px);
 }
 
 /* --- DESKTOP OVERRIDE --- */

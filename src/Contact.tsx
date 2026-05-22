@@ -79,7 +79,7 @@ function ResumeCard() {
           </a>
         )}
         {pdfUrl && (
-          <a className="btn btn-ghost" href={pdfUrl} target="_blank" rel="noreferrer">
+          <a className="btn btn-ghost" href={pdfUrl}>
             View online
             <IconArrow />
           </a>
