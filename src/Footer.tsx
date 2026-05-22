@@ -2,8 +2,8 @@ function Footer() {
   const year = new Date().getFullYear();
   return (
     <footer className="footer">
-      <div className="logo-font">Kachimov.com</div>
-      <div className="logo-font">© {year} Max Kachimov</div>
+      <div>Kachimov.com</div>
+      <div>© {year} Max Kachimov</div>
     </footer>
   );
 }

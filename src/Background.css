@@ -56,32 +56,28 @@
 
 /* --- Specific Glow Colors (Varied starting positions) --- */
 .glow-1 {
-    /* Maroon */
-    background: radial-gradient(circle, rgba(112, 39, 39, 0.7) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--glow-1) 70%, transparent) 0%, transparent 70%);
     top: 10%;
     left: 10%;
     transform: translate(-50%, -50%);
 }
 
 .glow-2 {
-    /* Blue */
-    background: radial-gradient(circle, rgba(4, 71, 125, 0.6) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--glow-2) 60%, transparent) 0%, transparent 70%);
     bottom: 15%;
     right: 20%;
     transform: translate(50%, 50%);
 }
 
 .glow-3 {
-    /* Teal/Green */
-    background: radial-gradient(circle, rgba(23, 163, 112, 0.6) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--glow-3) 60%, transparent) 0%, transparent 70%);
     top: 50%;
     right: 50%;
     transform: translate(0%, -50%);
 }
 
 .glow-4 {
-    /* Purple */
-    background: radial-gradient(circle, rgba(112, 39, 125, 0.6) 0%, transparent 70%);
+    background: radial-gradient(circle, color-mix(in srgb, var(--glow-4) 60%, transparent) 0%, transparent 70%);
     top: 30%;
     left: 70%;
     transform: translate(-50%, -50%);

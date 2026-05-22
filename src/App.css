@@ -15,6 +15,17 @@
   --c-bg: #0c0202;
   --c-bg-card: rgba(255, 255, 255, 0.03);
   --c-accent: #17a370;
+
+  /* Palette colors. Initial values match the signature palette; App.tsx tweens
+     these between palettes for the cross-fade (manually or via Auto). The three
+     --g* feed the wordmark gradient, the four --glow-* feed the aurora glows. */
+  --g0: #702727;
+  --g1: #04477d;
+  --g2: #17a370;
+  --glow-1: #702727;
+  --glow-2: #04477d;
+  --glow-3: #17a370;
+  --glow-4: #70277d;
 }
 
 html, #root {
@@ -33,7 +44,7 @@ body {
   padding: 0;
   background: #0c0202;
   color: var(--c-ink);
-  font-family: 'Skyer Monolite', sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
 }
 
 .page {
@@ -52,7 +63,6 @@ body {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: 12px;
   text-transform: uppercase;
   letter-spacing: 0.18em;
@@ -67,6 +77,85 @@ body {
   display: flex;
   align-items: center;
   gap: 10px;
+}
+
+/* Palette switcher (in topbar) */
+.palette-switch {
+  display: inline-flex;
+  align-items: center;
+  gap: 14px;
+  padding: 6px 12px 6px 14px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.025);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+}
+
+.palette-switch-label {
+  font-size: 10px;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  color: var(--c-ink-faint);
+}
+
+.palette-swatches {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.palette-swatch {
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  padding: 0;
+  cursor: pointer;
+  transition: transform 180ms ease, border-color 180ms ease, box-shadow 180ms ease;
+  outline: none;
+}
+
+.palette-swatch:hover {
+  transform: scale(1.12);
+  border-color: rgba(255, 255, 255, 0.35);
+}
+
+.palette-swatch.is-active {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 255, 255, 0.9);
+  transform: scale(1.08);
+}
+
+/* "Auto" swatch — sparkles icon on a rainbow conic ring, spins when on */
+.palette-swatch--auto {
+  display: inline-grid;
+  place-items: center;
+  color: var(--c-ink-dim);
+  background: conic-gradient(
+    from 0deg,
+    #b34951, #2a5f99, #1e9b8b, #d97757, #7a5ae0, #b34951
+  );
+}
+
+.palette-swatch--auto svg {
+  color: rgba(255, 255, 255, 0.95);
+}
+
+.palette-swatch--auto.is-active {
+  border-color: rgba(255, 255, 255, 0.95);
+  box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 255, 255, 0.9);
+  transform: scale(1.08);
+  animation: autoSpin 6s linear infinite;
+}
+
+@keyframes autoSpin {
+  0% {
+    filter: hue-rotate(0deg);
+  }
+  100% {
+    filter: hue-rotate(360deg);
+  }
 }
 
 .dot-status {
@@ -100,26 +189,16 @@ body {
 .hero {
   display: flex;
   flex-direction: column;
-  justify-content: center;
   align-items: flex-start;
   gap: clamp(18px, 2.5vw, 28px);
-  min-height: 56vh;
 }
 
 .kicker {
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: clamp(14px, 1.4vw, 18px);
   color: var(--c-ink-dim);
   letter-spacing: 0.02em;
   max-width: 60ch;
   line-height: 1.5;
-}
-
-.kicker em {
-  font-family: 'Instrument Serif', serif;
-  font-style: italic;
-  color: var(--c-ink);
-  font-size: 1.15em;
 }
 
 .wordmark {
@@ -134,7 +213,6 @@ body {
 }
 
 .tagline {
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: clamp(13px, 1.2vw, 16px);
   color: var(--c-ink-faint);
   letter-spacing: 0.04em;
@@ -205,7 +283,6 @@ body {
   padding: 11px 18px;
   border-radius: 999px;
   border: 1px solid var(--c-line-strong);
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: 13px;
   letter-spacing: 0.08em;
   text-transform: uppercase;
@@ -258,7 +335,6 @@ body {
 }
 
 .contact-card .label {
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
@@ -273,7 +349,6 @@ body {
   border-top: 1px solid var(--c-line);
   color: var(--c-ink);
   text-decoration: none;
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: 15px;
   letter-spacing: 0.02em;
   transition: color 0.2s ease, padding-left 0.2s ease;
@@ -309,19 +384,17 @@ body {
   align-items: center;
   padding-top: 22px;
   border-top: 1px solid var(--c-line);
-  font-family: 'Skyer Monolite', sans-serif;
   font-size: 11px;
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--c-ink-faint);
 }
 
-/* Existing title gradient — preserved */
+/* Title gradient — driven by the registered palette colors so it fades
+   alongside the background when the palette changes. */
 .title-gradient {
-  background: #702727;
-  background: -webkit-linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
-  background: -moz-linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
-  background: linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  background: var(--g0);
+  background: linear-gradient(90deg, var(--g0) 0%, var(--g1) 47%, var(--g2) 100%);
   background-clip: text;
   -webkit-background-clip: text;
   color: transparent;
@@ -336,11 +409,15 @@ body {
   .topbar-right {
     display: none;
   }
+  .palette-switch-label {
+    display: none;
+  }
+  .palette-switch {
+    padding: 6px 10px;
+    gap: 8px;
+  }
   .cta-row {
     grid-template-columns: 1fr;
-  }
-  .hero {
-    min-height: 50vh;
   }
   .footer {
     flex-direction: column;
