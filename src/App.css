@@ -3,17 +3,24 @@
   src: url('/fonts/skyer-400.otf') format('opentype');
   font-weight: normal;
   font-style: normal;
-  font-display: swap; /* Prevents layout shift during font load */
+  font-display: swap;
 }
 
-/* Add this to your main CSS file (e.g., App.css or index.css) */
-html, #root {
-    /* 1. Set the height of the document root and body to 100% */
-    height: 100%;
+:root {
+  --c-ink: #f3f1ec;
+  --c-ink-dim: rgba(243, 241, 236, 0.72);
+  --c-ink-faint: rgba(243, 241, 236, 0.42);
+  --c-line: rgba(243, 241, 236, 0.12);
+  --c-line-strong: rgba(243, 241, 236, 0.22);
+  --c-bg: #0c0202;
+  --c-bg-card: rgba(255, 255, 255, 0.03);
+  --c-accent: #17a370;
+}
 
-    /* 2. Optional: Ensure no default margin/padding on body */
-    margin: 0;
-    padding: 0;
+html, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
 }
 
 .logo-font {
@@ -21,52 +28,323 @@ html, #root {
 }
 
 body {
-    /* 1. Set the height of the document root and body to 100% */
-    height: 100%;
-
-    /* 2. Optional: Ensure no default margin/padding on body */
-    margin: 0;
-    padding: 0;
+  height: 100%;
+  margin: 0;
+  padding: 0;
   background: #0c0202;
-  color: white;
+  color: var(--c-ink);
   font-family: 'Skyer Monolite', sans-serif;
 }
 
 .page {
-  overflow-x: hidden;
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  padding: 28px clamp(20px, 4vw, 56px);
+  box-sizing: border-box;
+  gap: clamp(32px, 5vw, 56px);
 }
 
-.page.animation-in-progress {
-  overflow: hidden;
-  height: 100vh;
+/* Topbar */
+.topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.18em;
+  color: var(--c-ink-dim);
 }
 
-.header {
-  width: 100%;
-    z-index: 1000;
-
+.topbar-left {
+  letter-spacing: 0.18em;
 }
 
-.header-placeholder {
-  height: 60px;
+.topbar-right {
+  display: flex;
+  align-items: center;
+  gap: 10px;
 }
 
-.animated-top {
+.dot-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--c-accent);
+  box-shadow: 0 0 0 0 rgba(23, 163, 112, 0.7);
+  animation: pulse 2.4s ease-out infinite;
+}
+
+@keyframes pulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(23, 163, 112, 0.55);
+  }
+  70% {
+    box-shadow: 0 0 0 10px rgba(23, 163, 112, 0);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(23, 163, 112, 0);
+  }
+}
+
+/* Hero */
+.hero {
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: flex-start;
+  gap: clamp(18px, 2.5vw, 28px);
+  min-height: 56vh;
+}
+
+.kicker {
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: clamp(14px, 1.4vw, 18px);
+  color: var(--c-ink-dim);
+  letter-spacing: 0.02em;
+  max-width: 60ch;
+  line-height: 1.5;
+}
+
+.kicker em {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  color: var(--c-ink);
+  font-size: 1.15em;
+}
+
+.wordmark {
+  font-size: clamp(40px, 8.4vw, 124px);
   font-weight: bold;
+  line-height: 1;
+  white-space: nowrap;
+  display: flex;
+  align-items: center;
+  width: fit-content;
+  min-width: fit-content;
 }
 
+.tagline {
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: clamp(13px, 1.2vw, 16px);
+  color: var(--c-ink-faint);
+  letter-spacing: 0.04em;
+}
+
+.tagline em {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  color: var(--c-ink);
+  font-size: 1.1em;
+}
+
+/* CTA row */
+.cta-row {
+  display: grid;
+  grid-template-columns: 1.4fr 1fr;
+  gap: clamp(16px, 2.5vw, 28px);
+}
+
+.cta-card {
+  position: relative;
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  padding: clamp(20px, 2.6vw, 32px);
+  background: var(--c-bg-card);
+  backdrop-filter: blur(6px);
+  overflow: hidden;
+}
+
+.cta-card .glow {
+  position: absolute;
+  inset: -40% -10% auto auto;
+  width: 300px;
+  height: 300px;
+  background: radial-gradient(closest-side, rgba(23, 163, 112, 0.28), transparent 70%);
+  pointer-events: none;
+  filter: blur(20px);
+}
+
+.cta-card h2 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(24px, 2.6vw, 34px);
+  margin: 0 0 10px;
+  color: var(--c-ink);
+}
+
+.cta-card p {
+  margin: 0 0 22px;
+  color: var(--c-ink-dim);
+  font-size: 14px;
+  line-height: 1.55;
+  max-width: 52ch;
+}
+
+.cta-card .actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 11px 18px;
+  border-radius: 999px;
+  border: 1px solid var(--c-line-strong);
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  text-decoration: none;
+  cursor: pointer;
+  transition: background 0.2s ease, border-color 0.2s ease, transform 0.2s ease;
+  color: var(--c-ink);
+  background: transparent;
+}
+
+.btn:hover {
+  transform: translateY(-1px);
+}
+
+.btn-primary {
+  background: var(--c-ink);
+  color: #0c0202;
+  border-color: var(--c-ink);
+}
+
+.btn-primary:hover {
+  background: #fff;
+  border-color: #fff;
+}
+
+.btn-ghost {
+  background: transparent;
+  color: var(--c-ink);
+}
+
+.btn-ghost:hover {
+  background: rgba(255, 255, 255, 0.06);
+  border-color: var(--c-line-strong);
+}
+
+.btn svg {
+  width: 14px;
+  height: 14px;
+}
+
+/* Contact card */
+.contact-card {
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  padding: clamp(20px, 2.6vw, 32px);
+  background: var(--c-bg-card);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.contact-card .label {
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--c-ink-faint);
+}
+
+.contact-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 0;
+  border-top: 1px solid var(--c-line);
+  color: var(--c-ink);
+  text-decoration: none;
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: 15px;
+  letter-spacing: 0.02em;
+  transition: color 0.2s ease, padding-left 0.2s ease;
+}
+
+.contact-link:hover {
+  color: var(--c-accent);
+  padding-left: 4px;
+}
+
+.contact-link .left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.contact-link .left svg {
+  width: 16px;
+  height: 16px;
+  opacity: 0.7;
+}
+
+.contact-link .arrow {
+  width: 14px;
+  height: 14px;
+  opacity: 0.5;
+}
+
+/* Footer */
+.footer {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-top: 22px;
+  border-top: 1px solid var(--c-line);
+  font-family: 'Skyer Monolite', sans-serif;
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--c-ink-faint);
+}
+
+/* Existing title gradient — preserved */
 .title-gradient {
   background: #702727;
-  background: -webkit-linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
-  background: -moz-linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
-  background: linear-gradient(90deg,rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
-  filter: progid:DXImageTransform.Microsoft.gradient(
-          startColorstr="#702727",
-          endColorstr="#17A370",
-          GradientType=1
-  );
+  background: -webkit-linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  background: -moz-linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
+  background: linear-gradient(90deg, rgba(112, 39, 39, 1) 0%, rgba(4, 71, 125, 1) 47%, rgba(23, 163, 112, 1) 100%);
   background-clip: text;
-  -webkit-background-clip: text; /* For WebKit browsers */
+  -webkit-background-clip: text;
   color: transparent;
-  -webkit-text-fill-color: transparent; /* For WebKit browsers */
+  -webkit-text-fill-color: transparent;
+}
+
+@media (max-width: 720px) {
+  .page {
+    padding: 20px 18px;
+    gap: 28px;
+  }
+  .topbar-right {
+    display: none;
+  }
+  .cta-row {
+    grid-template-columns: 1fr;
+  }
+  .hero {
+    min-height: 50vh;
+  }
+  .footer {
+    flex-direction: column;
+    gap: 8px;
+    align-items: flex-start;
+  }
 }
