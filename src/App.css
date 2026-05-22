@@ -426,13 +426,11 @@ body {
     height: 20px;
   }
 
-  /* Keep the wordmark on screen: scale it down and let it wrap onto a second
-     line on the narrowest phones rather than overflowing horizontally. */
+  /* Scale the wordmark with the viewport so it always fits on one line.
+     11.5vw = 36.8px at 320px (fits within 284px), 43px at 375px, capped at 76px. */
   .wordmark {
-    font-size: clamp(40px, 13vw, 76px);
-    white-space: normal;
-    line-height: 1.05;
-    overflow-wrap: anywhere;
+    font-size: min(11.5vw, 76px);
+    white-space: nowrap;
   }
 
   .cta-row {
