@@ -45,12 +45,20 @@ body {
   background: #0c0202;
   color: var(--c-ink);
   font-family: system-ui, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  /* Never allow a stray wide element to cause sideways scroll on phones, and
+     keep iOS from auto-inflating text in landscape. */
+  overflow-x: hidden;
+  -webkit-text-size-adjust: 100%;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .page {
   position: relative;
   z-index: 1;
   min-height: 100vh;
+  /* Use the dynamic viewport unit where supported so the layout doesn't jump
+     as mobile browser chrome shows/hides. */
+  min-height: 100dvh;
   display: grid;
   grid-template-rows: auto 1fr auto;
   padding: 28px clamp(20px, 4vw, 56px);
@@ -406,6 +414,11 @@ body {
     padding: 20px 18px;
     gap: 28px;
   }
+
+  .topbar {
+    font-size: 11px;
+    letter-spacing: 0.14em;
+  }
   .topbar-right {
     display: none;
   }
@@ -416,12 +429,47 @@ body {
     padding: 6px 10px;
     gap: 8px;
   }
+  /* Roomier tap targets for the swatches on touch screens */
+  .palette-swatch {
+    width: 20px;
+    height: 20px;
+  }
+
+  /* Keep the wordmark on screen: scale it down and let it wrap onto a second
+     line on the narrowest phones rather than overflowing horizontally. */
+  .wordmark {
+    font-size: clamp(40px, 13vw, 76px);
+    white-space: normal;
+    line-height: 1.05;
+    overflow-wrap: anywhere;
+  }
+
   .cta-row {
     grid-template-columns: 1fr;
   }
+  .cta-card,
+  .contact-card {
+    border-radius: 16px;
+  }
+  /* Buttons share the row and center their labels for comfortable tapping */
+  .cta-card .actions .btn {
+    flex: 1 1 auto;
+    justify-content: center;
+  }
+
   .footer {
     flex-direction: column;
     gap: 8px;
     align-items: flex-start;
+  }
+}
+
+/* Extra-small phones: stack the CTA buttons full-width so labels never crowd */
+@media (max-width: 460px) {
+  .cta-card .actions {
+    flex-direction: column;
+  }
+  .cta-card .actions .btn {
+    width: 100%;
   }
 }
