@@ -27,7 +27,7 @@
     z-index: 5;
 }
 
-/* --- Base Glow Element Styling (RESPONSIVE UPDATE) --- */
+/* --- Base Glow Element Styling --- */
 .aurora-glow {
     position: absolute;
     border-radius: 50%;
@@ -35,23 +35,24 @@
     z-index: 1;
     will-change: transform, opacity;
 
-    /* MOBILE DEFAULT: keep the layer count and per-layer cost low — iOS Safari
-       has a hard per-tab GPU-memory cap and discards the page (dark blank
-       screen) when huge blurred, animated layers exceed it. Smaller blobs and a
-       smaller blur kernel keep us well under it. Background.tsx also renders
-       fewer glows on mobile. */
-    width: 70vmax;
-    height: 70vmax;
-    filter: blur(55px);
+    /* Size and blur are driven by the active quality tier, set as CSS custom
+       properties on .aurora-container by Background.tsx. A runtime FPS monitor
+       lowers the tier on weak hardware, shrinking both the blob and the blur
+       kernel (the dominant GPU cost) so the effect stays smooth. */
+    width: var(--glow-size, 900px);
+    height: var(--glow-size, 900px);
+    filter: blur(var(--glow-blur, 70px));
 }
 
-/* --- DESKTOP OVERRIDE --- */
-/* On screens larger than 768px (Tablets/Desktops), use smaller fixed sizes */
-@media (min-width: 768px) {
+/* --- PHONE MEMORY CAP --- */
+/* iOS Safari has a hard per-tab GPU-memory cap and discards the page (dark
+   blank screen) when blurred animated layers exceed it. Clamp the blob size on
+   small screens regardless of the tier's pixel size; blur still comes from the
+   tier variable. Must follow the base rule so it wins at equal specificity. */
+@media (max-width: 767px) {
     .aurora-glow {
-        width: 1000px;
-        height: 1000px;
-        filter: blur(100px);
+        width: 70vmax;
+        height: 70vmax;
     }
 }
 
