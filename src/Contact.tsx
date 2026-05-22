@@ -65,7 +65,6 @@ function ResumeCard() {
 
   return (
     <article className="cta-card">
-      <div className="glow" aria-hidden="true" />
       <h2>Resume / CV</h2>
       <p>
         A concise snapshot of how I work, where I&rsquo;ve shipped, and the kind of teams I do my best
