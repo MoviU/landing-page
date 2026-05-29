@@ -1,5 +1,5 @@
-import { useEffect, useRef, useState } from 'react';
-import { motion } from 'framer-motion';
+import { useEffect, useMemo, useRef, useState } from 'react';
+import { MotionConfig, motion } from 'framer-motion';
 import './App.css';
 import Background from './Background';
 import Hero, { GLIDE_DURATION_S } from './Hero';
@@ -41,9 +41,18 @@ const easeInOut = (t: number) =>
 const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
 
 function App() {
+  // Honor the OS "reduce motion" setting: no auto-cycling, and palette changes
+  // snap instead of running a per-frame color tween.
+  const prefersReducedMotion = useMemo(
+    () =>
+      typeof window !== 'undefined' &&
+      window.matchMedia('(prefers-reduced-motion: reduce)').matches,
+    []
+  );
+
   const [showContent, setShowContent] = useState(false);
   const [palette, setPalette] = useState<Palette>(PALETTES[0]);
-  const [autoPalette, setAutoPalette] = useState(true);
+  const [autoPalette, setAutoPalette] = useState(!prefersReducedMotion);
 
   // Read the latest palette inside the cycle interval without restarting it
   // every change (which would reset the timer).
@@ -55,7 +64,7 @@ function App() {
   // Auto: cycle palettes on an interval. First transition fires after 3s so the
   // cross-fade is visible right away, then every 7s.
   useEffect(() => {
-    if (!autoPalette) return;
+    if (!autoPalette || prefersReducedMotion) return;
     const tick = () => {
       const i = PALETTES.findIndex((opt) =>
         opt.every((c, j) => c === paletteRef.current[j])
@@ -68,7 +77,7 @@ function App() {
       clearTimeout(first);
       clearInterval(id);
     };
-  }, [autoPalette]);
+  }, [autoPalette, prefersReducedMotion]);
 
   // Colors currently painted on screen (rgb strings), so an interrupted fade
   // resumes from where it visually is rather than snapping.
@@ -90,6 +99,12 @@ function App() {
       root.setProperty('--g2', colors[2]);
       displayedRef.current = colors;
     };
+
+    // Reduced motion: skip the per-frame cross-fade entirely and snap.
+    if (prefersReducedMotion) {
+      apply(to.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`));
+      return;
+    }
 
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / FADE_MS);
@@ -116,7 +131,7 @@ function App() {
       cancelAnimationFrame(rafRef.current);
       clearTimeout(settle);
     };
-  }, [palette]);
+  }, [palette, prefersReducedMotion]);
 
   // A manual pick turns Auto off.
   const pickPalette = (next: Palette) => {
@@ -125,7 +140,7 @@ function App() {
   };
 
   return (
-    <>
+    <MotionConfig reducedMotion="user">
       <Background />
       <main className="page">
         {showContent && (
@@ -169,7 +184,7 @@ function App() {
           </motion.div>
         )}
       </main>
-    </>
+    </MotionConfig>
   );
 }
 

@@ -453,6 +453,26 @@ body {
   }
 }
 
+/* Accessibility + performance: when the OS asks for reduced motion, stop the
+   continuously running CSS animations (the status-dot pulse and the Auto
+   swatch's hue spin) and collapse hover/state transitions to near-instant.
+   Framer Motion entrances are handled separately via <MotionConfig>. */
+@media (prefers-reduced-motion: reduce) {
+  .dot {
+    animation: none;
+  }
+  .palette-swatch--auto.is-active {
+    animation: none;
+  }
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+  }
+}
+
 /* Extra-small phones: stack the CTA buttons full-width so labels never crowd */
 @media (max-width: 460px) {
   .cta-card .actions {
