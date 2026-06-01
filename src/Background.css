@@ -33,7 +33,6 @@
     border-radius: 50%;
     opacity: 0.6;
     z-index: 1;
-    will-change: transform, opacity;
 
     /* Size and blur are driven by the active quality tier, set as CSS custom
        properties on .aurora-container by Background.tsx. A runtime FPS monitor
@@ -42,6 +41,12 @@
     width: var(--glow-size, 900px);
     height: var(--glow-size, 900px);
     filter: blur(var(--glow-blur, 70px));
+}
+
+/* Only promote layers that actually move. The static fallback drops the hint so
+   it doesn't pin GPU memory it has no use for. */
+.aurora-glow.is-animated {
+    will-change: transform, opacity;
 }
 
 /* --- PHONE MEMORY CAP --- */

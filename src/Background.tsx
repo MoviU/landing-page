@@ -15,24 +15,33 @@ type TierConfig = {
   xRange: number; // horizontal travel in px (repaint region width)
   yRange: number; // vertical travel in px
   animate: boolean; // false = static glows, no per-frame work
+  breathe: number[]; // scale keyframes — fewer points = cheaper interpolation
 };
+
+// The full "breathing" scale curve used on capable devices, and a cheaper
+// 3-point curve for the lowest animated tier (less per-frame interpolation work
+// for the same gentle pulsing feel).
+const BREATHE_RICH = [1, 1.2, 0.8, 1.1, 0.9, 1.15, 0.85, 1.05, 1];
+const BREATHE_LITE = [1, 1.08, 0.96, 1];
 
 // Quality tiers. The app starts at the best tier the device is likely to
 // handle and a runtime FPS monitor steps it down if frames are being dropped,
 // so capable machines keep the full effect while weak ones degrade gracefully.
 const TIERS: Record<Tier, TierConfig> = {
-  high: { count: 10, blur: 70, size: 900, xRange: 1000, yRange: 1200, animate: true },
-  medium: { count: 6, blur: 55, size: 800, xRange: 700, yRange: 900, animate: true },
-  low: { count: 4, blur: 45, size: 700, xRange: 450, yRange: 550, animate: true },
-  off: { count: 4, blur: 60, size: 800, xRange: 0, yRange: 0, animate: false },
+  high: { count: 10, blur: 70, size: 900, xRange: 1000, yRange: 1200, animate: true, breathe: BREATHE_RICH },
+  medium: { count: 6, blur: 55, size: 800, xRange: 700, yRange: 900, animate: true, breathe: BREATHE_RICH },
+  low: { count: 4, blur: 40, size: 650, xRange: 450, yRange: 550, animate: true, breathe: BREATHE_LITE },
+  off: { count: 4, blur: 55, size: 750, xRange: 0, yRange: 0, animate: false, breathe: BREATHE_LITE },
 };
 
-// One-way degradation path. 'low' is the animated floor; we never auto-disable
-// motion — that only happens when the user asks for it via prefers-reduced-motion.
+// One-way degradation path. We prefer to keep motion, but a device that still
+// can't hold the target frame rate at the minimal animated 'low' tier (4 small,
+// lightly blurred layers) is genuinely struggling, so as a last resort we fall
+// back to fully static glows ('off') rather than let it stutter indefinitely.
 const NEXT_DOWN: Record<Tier, Tier> = {
   high: 'medium',
   medium: 'low',
-  low: 'low',
+  low: 'off',
   off: 'off',
 };
 
@@ -47,14 +56,34 @@ const generateRandomPath = (range: number, steps: number) => {
   return path;
 };
 
+// Pick the starting tier from what the device tells us about itself, so weak
+// hardware never has to render a few seconds of the heaviest effect before the
+// runtime FPS monitor can react. The monitor still fine-tunes from here.
 function getInitialTier(): Tier {
   if (typeof window === 'undefined') return 'high';
   // Respect the OS-level accessibility preference: no motion at all.
   if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
+
+  const nav = navigator as Navigator & {
+    deviceMemory?: number; // GB of RAM (rounded), Chromium only
+    connection?: { saveData?: boolean; effectiveType?: string };
+  };
+
+  // Hard "this device/connection is constrained" signals.
+  const saveData = nav.connection?.saveData === true;
+  const slowNet = /2g/.test(nav.connection?.effectiveType ?? '');
+  const cores = nav.hardwareConcurrency ?? 8; // logical CPUs; assume capable if unknown
+  const memory = nav.deviceMemory ?? 8; // GB; assume capable if unknown
+  const isPhone = window.matchMedia('(max-width: 767px)').matches;
+
+  // Clearly low-end: few cores / little RAM, or the user asked to save data.
+  if (saveData || slowNet || cores <= 4 || memory <= 4) return 'low';
+
   // iOS Safari has a hard per-tab GPU-memory cap and discards the page (dark
-  // blank screen) when blurred animated layers exceed it. Start phones lower so
-  // the page can't blank out before the FPS monitor has a chance to react.
-  if (window.matchMedia('(max-width: 767px)').matches) return 'medium';
+  // blank screen) when blurred animated layers exceed it. Start phones at
+  // 'medium' so the page can't blank out before the FPS monitor reacts.
+  if (isPhone) return 'medium';
+
   return 'high';
 }
 
@@ -142,7 +171,7 @@ const Background = () => {
             opacity: 1,
             x: xPath,
             y: yPath,
-            scale: [1, 1.2, 0.8, 1.1, 0.9, 1.15, 0.85, 1.05, 1], // Breathing effect
+            scale: config.breathe, // Breathing effect (tier-dependent detail)
             transition: {
               x: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
               y: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
@@ -159,7 +188,7 @@ const Background = () => {
         },
       };
     });
-  }, [config.count, config.xRange, config.yRange]);
+  }, [config.count, config.xRange, config.yRange, config.breathe]);
 
   return (
     <div
@@ -175,7 +204,9 @@ const Background = () => {
         ? glows.map((glow) => (
             <motion.div
               key={glow.id}
-              className={`aurora-glow ${glow.colorClass}`}
+              // 'is-animated' carries `will-change`; the static fallback below
+              // omits it so it doesn't needlessly hold a GPU layer.
+              className={`aurora-glow is-animated ${glow.colorClass}`}
               variants={glow.variants}
               initial="initial"
               animate="animate"
