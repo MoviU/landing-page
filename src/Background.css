@@ -49,6 +49,12 @@
     will-change: transform, opacity;
 }
 
+/* Weak-GPU path: no blur convolution at all. The radial gradient's soft falloff
+   already reads as a glow, so we skip the most expensive operation entirely. */
+.aurora-glow.no-blur {
+    filter: none;
+}
+
 /* --- PHONE MEMORY CAP --- */
 /* iOS Safari has a hard per-tab GPU-memory cap and discards the page (dark
    blank screen) when blurred animated layers exceed it. Clamp the blob size on
@@ -56,8 +62,8 @@
    tier variable. Must follow the base rule so it wins at equal specificity. */
 @media (max-width: 767px) {
     .aurora-glow {
-        width: 70vmax;
-        height: 70vmax;
+        width: 55vmax;
+        height: 55vmax;
     }
 }
 
