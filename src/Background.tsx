@@ -9,12 +9,15 @@ const MAX_DURATION = 50;
 type Tier = 'high' | 'medium' | 'low' | 'off';
 
 type TierConfig = {
-  count: number; // how many glow layers to render
-  blur: number; // blur radius in px (the dominant GPU cost)
+  count: number; // how many glow layers to render (overdraw = count × area)
+  blur: number; // blur radius in px — a convolution, the single biggest GPU cost
   size: number; // glow diameter in px
   xRange: number; // horizontal travel in px (repaint region width)
   yRange: number; // vertical travel in px
   animate: boolean; // false = static glows, no per-frame work
+  animateScale: boolean; // animate scale too? scale + blur re-rasterizes the
+  //                         blurred layer every frame; translate-only just
+  //                         re-composites a cached texture (nearly free).
   breathe: number[]; // scale keyframes — fewer points = cheaper interpolation
 };
 
@@ -24,14 +27,19 @@ type TierConfig = {
 const BREATHE_RICH = [1, 1.2, 0.8, 1.1, 0.9, 1.15, 0.85, 1.05, 1];
 const BREATHE_LITE = [1, 1.08, 0.96, 1];
 
-// Quality tiers. The app starts at the best tier the device is likely to
-// handle and a runtime FPS monitor steps it down if frames are being dropped,
-// so capable machines keep the full effect while weak ones degrade gracefully.
+// Quality tiers. The app starts at the best tier the device is likely to handle
+// and a runtime FPS monitor steps it down if frames drop, so capable machines
+// keep the full effect while weak ones degrade gracefully.
+//
+// The cheap path for weak GPUs: blur 0 (the soft radial-gradient falloff already
+// reads as a glow, so we skip the expensive blur convolution entirely) + fewer,
+// smaller layers (less overdraw) + translate-only motion (the layer rasterizes
+// once and the compositor just moves a cached texture each frame).
 const TIERS: Record<Tier, TierConfig> = {
-  high: { count: 10, blur: 70, size: 900, xRange: 1000, yRange: 1200, animate: true, breathe: BREATHE_RICH },
-  medium: { count: 6, blur: 55, size: 800, xRange: 700, yRange: 900, animate: true, breathe: BREATHE_RICH },
-  low: { count: 4, blur: 40, size: 650, xRange: 450, yRange: 550, animate: true, breathe: BREATHE_LITE },
-  off: { count: 4, blur: 55, size: 750, xRange: 0, yRange: 0, animate: false, breathe: BREATHE_LITE },
+  high: { count: 8, blur: 60, size: 850, xRange: 1000, yRange: 1200, animate: true, animateScale: true, breathe: BREATHE_RICH },
+  medium: { count: 5, blur: 28, size: 720, xRange: 700, yRange: 900, animate: true, animateScale: true, breathe: BREATHE_RICH },
+  low: { count: 3, blur: 0, size: 540, xRange: 420, yRange: 520, animate: true, animateScale: false, breathe: BREATHE_LITE },
+  off: { count: 3, blur: 0, size: 620, xRange: 0, yRange: 0, animate: false, animateScale: false, breathe: BREATHE_LITE },
 };
 
 // One-way degradation path. We prefer to keep motion, but a device that still
@@ -56,6 +64,26 @@ const generateRandomPath = (range: number, steps: number) => {
   return path;
 };
 
+// Probe for a real, hardware GPU. A software rasterizer (SwiftShader, llvmpipe,
+// "Microsoft Basic Render Driver") or no WebGL at all means there's effectively
+// no GPU to composite blurred layers — exactly the case we must render cheaply.
+function hasWeakOrNoGpu(): boolean {
+  try {
+    const canvas = document.createElement('canvas');
+    const gl = (canvas.getContext('webgl') ||
+      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
+    if (!gl) return true; // no WebGL → assume no usable GPU
+    const ext = gl.getExtension('WEBGL_debug_renderer_info');
+    if (!ext) return false; // can't tell; trust the other heuristics
+    const renderer = String(
+      gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) ?? ''
+    ).toLowerCase();
+    return /swiftshader|llvmpipe|software|microsoft basic|mesa offscreen/.test(renderer);
+  } catch {
+    return false;
+  }
+}
+
 // Pick the starting tier from what the device tells us about itself, so weak
 // hardware never has to render a few seconds of the heaviest effect before the
 // runtime FPS monitor can react. The monitor still fine-tunes from here.
@@ -75,6 +103,9 @@ function getInitialTier(): Tier {
   const cores = nav.hardwareConcurrency ?? 8; // logical CPUs; assume capable if unknown
   const memory = nav.deviceMemory ?? 8; // GB; assume capable if unknown
   const isPhone = window.matchMedia('(max-width: 767px)').matches;
+
+  // No real GPU → the cheap, blur-free, translate-only path from the start.
+  if (hasWeakOrNoGpu()) return 'low';
 
   // Clearly low-end: few cores / little RAM, or the user asked to save data.
   if (saveData || slowNet || cores <= 4 || memory <= 4) return 'low';
@@ -159,36 +190,53 @@ const Background = () => {
       // 3. Large negative delay for "pre-warming" (instant smooth movement)
       const delay = -random(0, duration);
 
+      // Scale "breathing" is only enabled on capable tiers. On the low tier we
+      // animate position alone: combined with blur 0 the layer rasterizes once
+      // and the GPU simply re-composites the cached texture at a new offset.
+      const scaleAnim = config.animateScale
+        ? {
+            scale: config.breathe,
+            transition: {
+              scale: {
+                duration: duration * 0.8, // slightly faster than movement, organic feel
+                ease: 'easeInOut',
+                repeat: Infinity,
+                repeatType: 'loop' as const,
+                delay,
+              },
+            },
+          }
+        : null;
+
       return {
         id: i,
         colorClass: `glow-${(i % 4) + 1}`, // Cycles through glow-1, glow-2, etc.
         variants: {
           initial: {
             opacity: 0,
-            scale: 0.5,
+            scale: config.animateScale ? 0.5 : 1,
           },
           animate: {
             opacity: 1,
             x: xPath,
             y: yPath,
-            scale: config.breathe, // Breathing effect (tier-dependent detail)
+            ...(scaleAnim ? { scale: scaleAnim.scale } : {}),
             transition: {
               x: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
               y: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
-              scale: {
-                duration: duration * 0.8, // Slightly faster than movement for organic feel
-                ease: 'easeInOut',
-                repeat: Infinity,
-                repeatType: 'loop',
-                delay,
-              },
+              ...(scaleAnim ? scaleAnim.transition : {}),
               opacity: { duration: 2, ease: 'easeOut' }, // Entrance fade-in
             },
           },
         },
       };
     });
-  }, [config.count, config.xRange, config.yRange, config.breathe]);
+  }, [config.count, config.xRange, config.yRange, config.animateScale, config.breathe]);
+
+  // When blur is 0 we drop the filter entirely ('no-blur') rather than apply
+  // blur(0px) — even a zero-radius filter establishes a filter layer the GPU has
+  // to allocate and rasterize. The soft radial-gradient carries the glow look.
+  const blurClass = config.blur === 0 ? ' no-blur' : '';
 
   return (
     <div
@@ -206,7 +254,7 @@ const Background = () => {
               key={glow.id}
               // 'is-animated' carries `will-change`; the static fallback below
               // omits it so it doesn't needlessly hold a GPU layer.
-              className={`aurora-glow is-animated ${glow.colorClass}`}
+              className={`aurora-glow is-animated${blurClass} ${glow.colorClass}`}
               variants={glow.variants}
               initial="initial"
               animate="animate"
@@ -214,7 +262,7 @@ const Background = () => {
           ))
         : glows.map((glow) => (
             // Static fallback: positioned and tinted by CSS, no per-frame work.
-            <div key={glow.id} className={`aurora-glow ${glow.colorClass}`} />
+            <div key={glow.id} className={`aurora-glow${blurClass} ${glow.colorClass}`} />
           ))}
 
       {/* The Dark Overlay */}
