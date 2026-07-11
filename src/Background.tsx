@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { motion } from 'framer-motion';
 import './Background.css';
 
@@ -245,7 +245,7 @@ const Background = () => {
         {
           '--glow-size': `${config.size}px`,
           '--glow-blur': `${config.blur}px`,
-        } as React.CSSProperties
+        } as CSSProperties
       }
     >
       {config.animate

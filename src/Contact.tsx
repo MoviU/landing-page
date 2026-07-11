@@ -1,3 +1,5 @@
+import type { ReactElement } from 'react';
+
 const IconDownload = () => (
   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
     <path d="M12 3v12" />
@@ -42,15 +44,14 @@ type ContactLinkSpec = {
   key: string;
   label: string;
   href: string;
-  Icon: () => React.ReactElement;
+  Icon: () => ReactElement;
 };
 
+// import.meta.env is inlined at build time, so the link list is a constant.
 function buildContactLinks(): ContactLinkSpec[] {
   const links: ContactLinkSpec[] = [];
-  const email = import.meta.env.VITE_EMAIL as string | undefined;
-  const linkedin = import.meta.env.VITE_LINKEDIN_URL as string | undefined;
-  const github = import.meta.env.VITE_GITHUB_URL as string | undefined;
-  const x = import.meta.env.VITE_X_URL as string | undefined;
+  const { VITE_EMAIL: email, VITE_LINKEDIN_URL: linkedin, VITE_GITHUB_URL: github, VITE_X_URL: x } =
+    import.meta.env;
 
   if (email) links.push({ key: 'email', label: 'Email', href: `mailto:${email}`, Icon: IconMail });
   if (linkedin) links.push({ key: 'linkedin', label: 'LinkedIn', href: linkedin, Icon: IconLinkedIn });
@@ -60,9 +61,10 @@ function buildContactLinks(): ContactLinkSpec[] {
   return links;
 }
 
-function ResumeCard() {
-  const pdfUrl = import.meta.env.VITE_PDF_URL as string | undefined;
+const CONTACT_LINKS = buildContactLinks();
+const PDF_URL = import.meta.env.VITE_PDF_URL;
 
+function ResumeCard() {
   return (
     <article className="cta-card">
       <h2>Resume / CV</h2>
@@ -71,17 +73,17 @@ function ResumeCard() {
         work with. Grab the PDF or read it in your browser.
       </p>
       <div className="actions">
-        {pdfUrl && (
-          <a className="btn btn-primary" href={pdfUrl} download>
-            <IconDownload />
-            Download CV (PDF)
-          </a>
-        )}
-        {pdfUrl && (
-          <a className="btn btn-ghost" href={pdfUrl}>
-            View online
-            <IconArrow />
-          </a>
+        {PDF_URL && (
+          <>
+            <a className="btn btn-primary" href={PDF_URL} download>
+              <IconDownload />
+              Download CV (PDF)
+            </a>
+            <a className="btn btn-ghost" href={PDF_URL}>
+              View online
+              <IconArrow />
+            </a>
+          </>
         )}
       </div>
     </article>
@@ -89,13 +91,12 @@ function ResumeCard() {
 }
 
 function ContactCard() {
-  const links = buildContactLinks();
-  if (links.length === 0) return null;
+  if (CONTACT_LINKS.length === 0) return null;
 
   return (
     <aside className="contact-card">
       <div className="label">Elsewhere</div>
-      {links.map(({ key, label, href, Icon }) => {
+      {CONTACT_LINKS.map(({ key, label, href, Icon }) => {
         const isExternal = !href.startsWith('mailto:');
         return (
           <a

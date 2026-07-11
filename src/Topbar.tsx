@@ -2,8 +2,8 @@ export type Palette = string[];
 
 type TopbarProps = {
   palettes: Palette[];
-  palette: Palette;
-  onPaletteChange: (palette: Palette) => void;
+  paletteIndex: number;
+  onPaletteChange: (index: number) => void;
   auto: boolean;
   onToggleAuto: () => void;
 };
@@ -56,12 +56,11 @@ function AutoSwatch({ active, onClick }: { active: boolean; onClick: () => void 
 
 function PaletteSwitcher({
   palettes,
-  palette,
+  paletteIndex,
   onPaletteChange,
   auto,
   onToggleAuto,
 }: TopbarProps) {
-  const isActive = (opt: Palette) => opt.every((color, i) => color === palette[i]);
   return (
     <span className="palette-switch" role="radiogroup" aria-label="Background palette">
       <span className="palette-switch-label">Palette</span>
@@ -71,8 +70,8 @@ function PaletteSwitcher({
           <PaletteSwatch
             key={i}
             colors={opt}
-            active={!auto && isActive(opt)}
-            onClick={() => onPaletteChange(opt)}
+            active={!auto && i === paletteIndex}
+            onClick={() => onPaletteChange(i)}
           />
         ))}
       </span>

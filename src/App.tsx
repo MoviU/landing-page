@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { MotionConfig, motion } from 'framer-motion';
+import type { ReactNode } from 'react';
 import './App.css';
 import Background from './Background';
 import Hero, { GLIDE_DURATION_S } from './Hero';
@@ -40,6 +41,27 @@ const easeInOut = (t: number) =>
 
 const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
 
+// Fade/slide-in wrapper for the content that appears after the hero intro.
+function Reveal({
+  delay,
+  y = 0,
+  children,
+}: {
+  delay: number;
+  y?: number;
+  children: ReactNode;
+}) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, ease: 'easeOut', delay }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 function App() {
   // Honor the OS "reduce motion" setting: no auto-cycling, and palette changes
   // snap instead of running a per-frame color tween.
@@ -51,26 +73,15 @@ function App() {
   );
 
   const [showContent, setShowContent] = useState(false);
-  const [palette, setPalette] = useState<Palette>(PALETTES[0]);
+  const [paletteIndex, setPaletteIndex] = useState(0);
   const [autoPalette, setAutoPalette] = useState(!prefersReducedMotion);
-
-  // Read the latest palette inside the cycle interval without restarting it
-  // every change (which would reset the timer).
-  const paletteRef = useRef(palette);
-  useEffect(() => {
-    paletteRef.current = palette;
-  }, [palette]);
+  const palette = PALETTES[paletteIndex];
 
   // Auto: cycle palettes on an interval. First transition fires after 3s so the
   // cross-fade is visible right away, then every 7s.
   useEffect(() => {
     if (!autoPalette || prefersReducedMotion) return;
-    const tick = () => {
-      const i = PALETTES.findIndex((opt) =>
-        opt.every((c, j) => c === paletteRef.current[j])
-      );
-      setPalette(PALETTES[(i + 1 + PALETTES.length) % PALETTES.length]);
-    };
+    const tick = () => setPaletteIndex((i) => (i + 1) % PALETTES.length);
     const first = setTimeout(tick, AUTO_FIRST_DELAY_MS);
     const id = setInterval(tick, AUTO_INTERVAL_MS);
     return () => {
@@ -82,7 +93,6 @@ function App() {
   // Colors currently painted on screen (rgb strings), so an interrupted fade
   // resumes from where it visually is rather than snapping.
   const displayedRef = useRef<string[]>(PALETTES[0]);
-  const rafRef = useRef<number>(0);
 
   // Tween the palette into the CSS custom properties so the background glows
   // and the wordmark gradient cross-fade when the palette changes.
@@ -106,6 +116,7 @@ function App() {
       return;
     }
 
+    let raf = 0;
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / FADE_MS);
       const e = easeInOut(t);
@@ -115,9 +126,9 @@ function App() {
             `rgb(${lerp(r, to[i][0], e)}, ${lerp(g, to[i][1], e)}, ${lerp(b, to[i][2], e)})`
         )
       );
-      if (t < 1) rafRef.current = requestAnimationFrame(step);
+      if (t < 1) raf = requestAnimationFrame(step);
     };
-    rafRef.current = requestAnimationFrame(step);
+    raf = requestAnimationFrame(step);
 
     // requestAnimationFrame is paused while the tab is hidden, so guarantee the
     // final colors land regardless. When visible, the rAF tween reaches the same
@@ -128,15 +139,15 @@ function App() {
     );
 
     return () => {
-      cancelAnimationFrame(rafRef.current);
+      cancelAnimationFrame(raf);
       clearTimeout(settle);
     };
   }, [palette, prefersReducedMotion]);
 
   // A manual pick turns Auto off.
-  const pickPalette = (next: Palette) => {
+  const pickPalette = (index: number) => {
     setAutoPalette(false);
-    setPalette(next);
+    setPaletteIndex(index);
   };
 
   return (
@@ -144,19 +155,15 @@ function App() {
       <Background />
       <main className="page">
         {showContent && (
-          <motion.div
-            initial={{ opacity: 0, y: -8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: GLIDE_DURATION_S }}
-          >
+          <Reveal delay={GLIDE_DURATION_S} y={-8}>
             <Topbar
               palettes={PALETTES}
-              palette={palette}
+              paletteIndex={paletteIndex}
               onPaletteChange={pickPalette}
               auto={autoPalette}
               onToggleAuto={() => setAutoPalette((v) => !v)}
             />
-          </motion.div>
+          </Reveal>
         )}
 
         <Hero
@@ -165,23 +172,15 @@ function App() {
         />
 
         {showContent && (
-          <motion.div
-            initial={{ opacity: 0, y: 12 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: GLIDE_DURATION_S + 0.2 }}
-          >
+          <Reveal delay={GLIDE_DURATION_S + 0.2} y={12}>
             <Contact />
-          </motion.div>
+          </Reveal>
         )}
 
         {showContent && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.6, ease: 'easeOut', delay: GLIDE_DURATION_S + 0.35 }}
-          >
+          <Reveal delay={GLIDE_DURATION_S + 0.35}>
             <Footer />
-          </motion.div>
+          </Reveal>
         )}
       </main>
     </MotionConfig>
