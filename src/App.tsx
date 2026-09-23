@@ -1,6 +1,5 @@
 import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
-import { MotionConfig, motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import './App.css';
 import Background from './Background';
 import Hero, { GLIDE_DURATION_S } from './Hero';
@@ -40,6 +39,7 @@ const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
 // Fade/slide-in wrapper for the content that appears after the hero intro.
+// A CSS animation (see .rise-in), so it runs on the compositor thread.
 function Reveal({
   delay,
   y = 0,
@@ -50,13 +50,12 @@ function Reveal({
   children: ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut', delay }}
+    <div
+      className="rise-in"
+      style={{ animationDelay: `${delay}s`, '--rise-from': `${y}px` } as CSSProperties}
     >
       {children}
-    </motion.div>
+    </div>
   );
 }
 
@@ -85,8 +84,9 @@ function NotFound() {
 function App() {
   const { path } = useRouter();
 
-  // Honor the OS "reduce motion" setting: no auto-cycling, and palette changes
-  // snap instead of running a per-frame color tween.
+  // Honor the OS "reduce motion" setting: no auto-cycling, palette changes snap
+  // instead of running a per-frame color tween, the aurora holds a still frame
+  // and the wordmark skips its glide. Read once here and passed down.
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== 'undefined' &&
@@ -176,8 +176,8 @@ function App() {
   const isHome = path === '/';
 
   return (
-    <MotionConfig reducedMotion="user">
-      <Background />
+    <>
+      <Background reducedMotion={prefersReducedMotion} />
       <main className="page">
         {showContent && (
           <Reveal delay={revealDelay} y={-8}>
@@ -196,6 +196,7 @@ function App() {
             <Hero
               showContent={showContent}
               onAnimationComplete={() => setShowContent(true)}
+              reducedMotion={prefersReducedMotion}
             />
 
             {showContent && (
@@ -222,7 +223,7 @@ function App() {
           </Reveal>
         )}
       </main>
-    </MotionConfig>
+    </>
   );
 }
 

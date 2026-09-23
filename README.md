@@ -1,6 +1,6 @@
 # Landing page
 
-Personal landing page (kachimov.com) built with React 19, TypeScript, Vite, and Framer Motion.
+Personal landing page (kachimov.com) built with React 19, TypeScript, and Vite.
 
 ## Setup
 

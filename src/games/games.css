@@ -178,9 +178,9 @@ a.game-card:hover {
   place-items: center;
   padding: 20px;
   box-sizing: border-box;
-  background: rgba(12, 2, 2, 0.72);
-  backdrop-filter: blur(3px);
-  -webkit-backdrop-filter: blur(3px);
+  /* A touch darker instead of a backdrop-filter: the board is translucent, so
+     a backdrop blur would re-blur the animated aurora behind it every frame. */
+  background: rgba(12, 2, 2, 0.8);
 }
 
 .snake-overlay-card {

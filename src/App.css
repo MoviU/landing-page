@@ -124,9 +124,10 @@ body {
   padding: 6px 12px 6px 14px;
   border: 1px solid var(--c-line-strong);
   border-radius: 999px;
+  /* No backdrop-filter here or on the cards: over an animated background it
+     re-blurs the backdrop every frame, and the aurora is already so soft that
+     blurring it again is invisible. */
   background: rgba(255, 255, 255, 0.025);
-  backdrop-filter: blur(8px);
-  -webkit-backdrop-filter: blur(8px);
 }
 
 .palette-switch-label {
@@ -166,6 +167,8 @@ body {
 
 /* "Auto" swatch — sparkles icon on a rainbow conic ring, spins when on */
 .palette-swatch--auto {
+  position: relative;
+  isolation: isolate;
   display: inline-grid;
   place-items: center;
   color: var(--c-ink-dim);
@@ -173,6 +176,17 @@ body {
     from 0deg,
     #b34951, #2a5f99, #1e9b8b, #d97757, #7a5ae0, #b34951
   );
+}
+
+/* The spinning copy of the ring lives on its own element so the spin is a
+   compositor-only transform (no per-frame repaint) and the icon stays upright. */
+.palette-swatch--auto::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  border-radius: 50%;
+  background: inherit;
 }
 
 .palette-swatch--auto svg {
@@ -183,15 +197,15 @@ body {
   border-color: rgba(255, 255, 255, 0.95);
   box-shadow: 0 0 0 2px rgba(0, 0, 0, 0.6), 0 0 0 3px rgba(255, 255, 255, 0.9);
   transform: scale(1.08);
+}
+
+.palette-swatch--auto.is-active::before {
   animation: autoSpin 6s linear infinite;
 }
 
 @keyframes autoSpin {
-  0% {
-    filter: hue-rotate(0deg);
-  }
-  100% {
-    filter: hue-rotate(360deg);
+  to {
+    transform: rotate(360deg);
   }
 }
 
@@ -202,23 +216,34 @@ body {
 }
 
 .dot {
+  position: relative;
   width: 8px;
   height: 8px;
   border-radius: 50%;
   background: var(--c-accent);
-  box-shadow: 0 0 0 0 rgba(23, 163, 112, 0.7);
+}
+
+/* The pulse ring scales and fades (compositor-only) rather than animating
+   box-shadow, which would repaint on the main thread every frame, forever.
+   Scale 3.5 = the old 10px spread around the 8px dot. */
+.dot::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  background: rgba(23, 163, 112, 0.55);
   animation: pulse 2.4s ease-out infinite;
 }
 
 @keyframes pulse {
   0% {
-    box-shadow: 0 0 0 0 rgba(23, 163, 112, 0.55);
+    transform: scale(1);
+    opacity: 1;
   }
-  70% {
-    box-shadow: 0 0 0 10px rgba(23, 163, 112, 0);
-  }
+  70%,
   100% {
-    box-shadow: 0 0 0 0 rgba(23, 163, 112, 0);
+    transform: scale(3.5);
+    opacity: 0;
   }
 }
 
@@ -275,7 +300,6 @@ body {
   border-radius: 18px;
   padding: clamp(20px, 2.6vw, 32px);
   background: var(--c-bg-card);
-  backdrop-filter: blur(6px);
   overflow: hidden;
 }
 
@@ -379,18 +403,23 @@ body {
   text-decoration: none;
   font-size: 15px;
   letter-spacing: 0.02em;
-  transition: color 0.2s ease, padding-left 0.2s ease;
+  transition: color 0.2s ease;
 }
 
 .contact-link:hover {
   color: var(--c-accent);
-  padding-left: 4px;
 }
 
+/* Nudge with a transform, not padding, so the hover doesn't relayout. */
 .contact-link .left {
   display: flex;
   align-items: center;
   gap: 12px;
+  transition: transform 0.2s ease;
+}
+
+.contact-link:hover .left {
+  transform: translateX(4px);
 }
 
 .contact-link .left svg {
@@ -416,6 +445,35 @@ body {
   text-transform: uppercase;
   letter-spacing: 0.22em;
   color: var(--c-ink-faint);
+}
+
+/* Entrances. Opacity + transform only, so they run on the compositor thread
+   and stay smooth even while the main thread is busy mounting the page — the
+   reveals start exactly when React inserts the content. The delay comes from
+   an inline animation-delay; `backwards` holds the start frame until then. */
+.rise-in {
+  animation: rise-in 0.6s ease-out backwards;
+}
+
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translateY(var(--rise-from, 0px));
+  }
+}
+
+/* The duration comes inline from the caller (Hero's INTRO_APPEAR_MS), so the
+   timing lives in one place. */
+.fade-in {
+  animation-name: fade-in;
+  animation-timing-function: ease-out;
+  animation-fill-mode: backwards;
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
 }
 
 /* Placeholder while a lazily-loaded route chunk arrives — reserves the row so
@@ -497,13 +555,14 @@ body {
 
 /* Accessibility + performance: when the OS asks for reduced motion, stop the
    continuously running CSS animations (the status-dot pulse and the Auto
-   swatch's hue spin) and collapse hover/state transitions to near-instant.
-   Framer Motion entrances are handled separately via <MotionConfig>. */
+   swatch's spin) and collapse entrances and hover/state transitions to
+   near-instant. The aurora canvas paints a single still frame instead. */
 @media (prefers-reduced-motion: reduce) {
-  .dot {
+  .dot::after {
     animation: none;
+    opacity: 0;
   }
-  .palette-swatch--auto.is-active {
+  .palette-swatch--auto.is-active::before {
     animation: none;
   }
   *,

@@ -1,274 +1,187 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
-import { motion } from 'framer-motion';
+import { useLayoutEffect, useRef } from 'react';
+import { createBlobs, createSprite, drawAurora, INTRO_MS, paintSprite } from './aurora';
+import { toRgb } from './colors';
 import './Background.css';
 
-// --- Configuration ---
-const MIN_DURATION = 30;
-const MAX_DURATION = 50;
+const BLOB_COUNT = 8;
 
-type Tier = 'high' | 'medium' | 'low' | 'off';
-
-type TierConfig = {
-  count: number; // how many glow layers to render (overdraw = count × area)
-  blur: number; // blur radius in px — a convolution, the single biggest GPU cost
-  size: number; // glow diameter in px
-  xRange: number; // horizontal travel in px (repaint region width)
-  yRange: number; // vertical travel in px
-  animate: boolean; // false = static glows, no per-frame work
-  animateScale: boolean; // animate scale too? scale + blur re-rasterizes the
-  //                         blurred layer every frame; translate-only just
-  //                         re-composites a cached texture (nearly free).
-  breathe: number[]; // scale keyframes — fewer points = cheaper interpolation
+type Level = {
+  fps: number; // frame-rate cap
+  downscale: number; // canvas pixels per CSS pixel, inverted (8 = 1/8 size)
 };
 
-// The full "breathing" scale curve used on capable devices, and a cheaper
-// 3-point curve for the lowest animated tier (less per-frame interpolation work
-// for the same gentle pulsing feel).
-const BREATHE_RICH = [1, 1.2, 0.8, 1.1, 0.9, 1.15, 0.85, 1.05, 1];
-const BREATHE_LITE = [1, 1.08, 0.96, 1];
+// Quality ladder. Every level draws the full aurora — all eight glows, same
+// look. What gives on a struggling device is only the frame rate and the size
+// of the tiny bitmap, both close to invisible on something this soft and slow.
+// The whole-screen GPU cost is one textured quad per rendered frame, so the
+// frame rate is the lever that actually matters on a weak GPU.
+const LEVELS: Level[] = [
+  { fps: 60, downscale: 8 },
+  { fps: 30, downscale: 8 },
+  { fps: 20, downscale: 12 },
+];
 
-// Quality tiers. The app starts at the best tier the device is likely to handle
-// and a runtime FPS monitor steps it down if frames drop, so capable machines
-// keep the full effect while weak ones degrade gracefully.
-//
-// The cheap path for weak GPUs: blur 0 (the soft radial-gradient falloff already
-// reads as a glow, so we skip the expensive blur convolution entirely) + fewer,
-// smaller layers (less overdraw) + translate-only motion (the layer rasterizes
-// once and the compositor just moves a cached texture each frame).
-const TIERS: Record<Tier, TierConfig> = {
-  high: { count: 8, blur: 60, size: 850, xRange: 1000, yRange: 1200, animate: true, animateScale: true, breathe: BREATHE_RICH },
-  medium: { count: 5, blur: 28, size: 720, xRange: 700, yRange: 900, animate: true, animateScale: true, breathe: BREATHE_RICH },
-  low: { count: 3, blur: 0, size: 540, xRange: 420, yRange: 520, animate: true, animateScale: false, breathe: BREATHE_LITE },
-  off: { count: 3, blur: 0, size: 620, xRange: 0, yRange: 0, animate: false, animateScale: false, breathe: BREATHE_LITE },
-};
+// The palette colors App.tsx tweens onto the root element's inline style.
+const GLOW_VARS = ['--glow-1', '--glow-2', '--glow-3', '--glow-4'];
 
-// One-way degradation path. We prefer to keep motion, but a device that still
-// can't hold the target frame rate at the minimal animated 'low' tier (4 small,
-// lightly blurred layers) is genuinely struggling, so as a last resort we fall
-// back to fully static glows ('off') rather than let it stutter indefinitely.
-const NEXT_DOWN: Record<Tier, Tier> = {
-  high: 'medium',
-  medium: 'low',
-  low: 'off',
-  off: 'off',
-};
+// Longest step the clock takes in one frame, so a stalled or backgrounded tab
+// resumes where it left off instead of jumping ahead.
+const MAX_STEP_MS = 100;
 
-// Helper to get a random number between min and max
-const random = (min: number, max: number) => Math.floor(Math.random() * (max - min + 1) + min);
+// How early a frame may land, so vsync jitter doesn't skip a frame that's due.
+const PACING_SLACK_MS = 2;
 
-// Helper to generate a random path array.
-// We ensure the last point equals the first point for a seamless loop.
-const generateRandomPath = (range: number, steps: number) => {
-  const path = Array.from({ length: steps }, () => random(-range, range));
-  path.push(path[0]); // Close the loop
-  return path;
-};
+// Runtime probe: sample the rendered frame rate in ~1s windows and drop a level
+// after a couple of windows below 80% of the target. One-way, so the page
+// settles on the best level the device sustains.
+const SAMPLE_MS = 1000;
+const MAX_STRIKES = 2;
 
-// Probe for a real, hardware GPU. A software rasterizer (SwiftShader, llvmpipe,
-// "Microsoft Basic Render Driver") or no WebGL at all means there's effectively
-// no GPU to composite blurred layers — exactly the case we must render cheaply.
-function hasWeakOrNoGpu(): boolean {
-  try {
-    const canvas = document.createElement('canvas');
-    const gl = (canvas.getContext('webgl') ||
-      canvas.getContext('experimental-webgl')) as WebGLRenderingContext | null;
-    if (!gl) return true; // no WebGL → assume no usable GPU
-    const ext = gl.getExtension('WEBGL_debug_renderer_info');
-    if (!ext) return false; // can't tell; trust the other heuristics
-    const renderer = String(
-      gl.getParameter(ext.UNMASKED_RENDERER_WEBGL) ?? ''
-    ).toLowerCase();
-    return /swiftshader|llvmpipe|software|microsoft basic|mesa offscreen/.test(renderer);
-  } catch {
-    return false;
-  }
-}
-
-// Pick the starting tier from what the device tells us about itself, so weak
-// hardware never has to render a few seconds of the heaviest effect before the
-// runtime FPS monitor can react. The monitor still fine-tunes from here.
-function getInitialTier(): Tier {
-  if (typeof window === 'undefined') return 'high';
-  // Respect the OS-level accessibility preference: no motion at all.
-  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return 'off';
-
+// Start constrained devices a level down, so they don't spend the first few
+// seconds proving to the probe that they're slow.
+function getInitialLevel(): number {
   const nav = navigator as Navigator & {
     deviceMemory?: number; // GB of RAM (rounded), Chromium only
     connection?: { saveData?: boolean; effectiveType?: string };
   };
-
-  // Hard "this device/connection is constrained" signals.
   const saveData = nav.connection?.saveData === true;
   const slowNet = /2g/.test(nav.connection?.effectiveType ?? '');
-  const cores = nav.hardwareConcurrency ?? 8; // logical CPUs; assume capable if unknown
-  const memory = nav.deviceMemory ?? 8; // GB; assume capable if unknown
-  const isPhone = window.matchMedia('(max-width: 767px)').matches;
-
-  // No real GPU → the cheap, blur-free, translate-only path from the start.
-  if (hasWeakOrNoGpu()) return 'low';
-
-  // Clearly low-end: few cores / little RAM, or the user asked to save data.
-  if (saveData || slowNet || cores <= 4 || memory <= 4) return 'low';
-
-  // iOS Safari has a hard per-tab GPU-memory cap and discards the page (dark
-  // blank screen) when blurred animated layers exceed it. Start phones at
-  // 'medium' so the page can't blank out before the FPS monitor reacts.
-  if (isPhone) return 'medium';
-
-  return 'high';
+  const cores = nav.hardwareConcurrency ?? 8;
+  const memory = nav.deviceMemory ?? 8;
+  return saveData || slowNet || cores <= 4 || memory <= 4 ? 1 : 0;
 }
 
-const Background = () => {
-  const [tier, setTier] = useState<Tier>(getInitialTier);
+type BackgroundProps = {
+  reducedMotion: boolean;
+};
 
-  // Mirror the tier into a ref so the once-mounted FPS loop can read the current
-  // value without being torn down and restarted every time the tier changes.
-  const tierRef = useRef(tier);
-  useEffect(() => {
-    tierRef.current = tier;
-  }, [tier]);
+const Background = ({ reducedMotion }: BackgroundProps) => {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
 
-  // Runtime performance probe. Sample the real frame rate in ~1s windows; if the
-  // device misses our target across a couple of windows, drop a quality tier.
-  // Degradation is one-way, so we settle on the best tier the device sustains.
-  useEffect(() => {
-    if (!TIERS[tierRef.current].animate) return; // nothing to monitor when static
+  // Layout effect so the first frame is painted before the browser's first
+  // paint — an opaque canvas starts out black.
+  useLayoutEffect(() => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d', { alpha: false });
+    if (!canvas || !ctx) return;
+
+    const root = document.documentElement;
+    const styles = getComputedStyle(root);
+    const defaults = GLOW_VARS.map((name) => styles.getPropertyValue(name).trim());
+    const blobs = createBlobs(BLOB_COUNT);
+    const sprites = GLOW_VARS.map(createSprite);
+    const spriteColors = GLOW_VARS.map(() => ''); // the color each sprite holds
+
+    let level = getInitialLevel();
+    // Reduced motion gets one still frame with the glows already fully in.
+    let clock = reducedMotion ? INTRO_MS : 0;
+
+    // Re-bake a sprite only when its palette color changed, i.e. mid palette
+    // fade. The rest of the time a frame costs four string compares.
+    const syncSprites = () => {
+      for (let i = 0; i < GLOW_VARS.length; i++) {
+        const color = root.style.getPropertyValue(GLOW_VARS[i]).trim() || defaults[i];
+        if (color === spriteColors[i]) continue;
+        spriteColors[i] = color;
+        paintSprite(sprites[i], i, toRgb(color));
+      }
+    };
+
+    const resize = () => {
+      const { downscale } = LEVELS[level];
+      // Size from the element's own box, which is what CSS stretches the
+      // bitmap over; window.innerWidth/innerHeight can differ by the scrollbar
+      // or the iOS toolbar and would squash the glows into ellipses.
+      const width = Math.max(1, Math.ceil(canvas.clientWidth / downscale));
+      const height = Math.max(1, Math.ceil(canvas.clientHeight / downscale));
+      if (canvas.width === width && canvas.height === height) return;
+      canvas.width = width; // also clears the bitmap, so repaint right after
+      canvas.height = height;
+    };
+
+    const paint = () => {
+      syncSprites();
+      drawAurora(ctx, canvas.width, canvas.height, blobs, sprites, clock);
+    };
+
+    const repaint = () => {
+      resize();
+      paint();
+    };
+
+    repaint();
+    canvas.dataset.level = reducedMotion ? 'still' : String(level); // for devtools
+    const resizeObserver = new ResizeObserver(repaint);
+    resizeObserver.observe(canvas);
+
+    if (reducedMotion) {
+      // No clock. Repaint only when something visible changes: a resize, or
+      // App snapping to a new palette on the root element's inline style.
+      const styleObserver = new MutationObserver(paint);
+      styleObserver.observe(root, { attributes: true, attributeFilter: ['style'] });
+      return () => {
+        styleObserver.disconnect();
+        resizeObserver.disconnect();
+      };
+    }
 
     let raf = 0;
     let last = performance.now();
+    let due = 0; // time accrued toward the next rendered frame
+    let windowStart = last;
     let frames = 0;
-    let acc = 0;
     let strikes = 0;
     let warmedUp = false; // skip the first window: mount/font work isn't steady state
-    const SAMPLE_MS = 1000;
-    const TARGET_FPS = 45;
-    const MAX_STRIKES = 2;
 
-    const tick = (now: number) => {
-      frames += 1;
-      acc += now - last;
+    const frame = (now: number) => {
+      raf = requestAnimationFrame(frame);
+
+      const elapsed = now - last;
       last = now;
-
-      if (acc >= SAMPLE_MS) {
-        const fps = (frames * 1000) / acc;
-        if (!warmedUp) {
-          warmedUp = true; // discard the noisy startup window
-        } else if (fps < TARGET_FPS) {
-          strikes += 1;
-          if (strikes >= MAX_STRIKES) {
-            setTier((t) => NEXT_DOWN[t]);
-            strikes = 0;
-          }
-        } else {
-          strikes = 0; // a healthy window forgives earlier stutter
-        }
+      clock += Math.min(elapsed, MAX_STEP_MS);
+      if (elapsed > 500) {
+        // A hidden tab or a one-off stall, not a slow device.
+        windowStart = now;
         frames = 0;
-        acc = 0;
-        // Reached the animated floor — stop probing to save the main thread.
-        if (NEXT_DOWN[tierRef.current] === tierRef.current) return;
       }
-      raf = requestAnimationFrame(tick);
+
+      // Pace to the level's frame rate. The remainder carries over rather than
+      // resetting, so the average holds the target at any refresh rate: a 90Hz
+      // display alternates one- and two-frame gaps for a steady 60fps instead
+      // of settling on every other frame (45fps).
+      const interval = 1000 / LEVELS[level].fps;
+      due += elapsed;
+      if (due < interval - PACING_SLACK_MS) return;
+      due = Math.min(due - interval, interval);
+      paint();
+
+      if (level === LEVELS.length - 1) return; // at the floor, nothing left to tune
+      frames += 1;
+      if (now - windowStart < SAMPLE_MS) return;
+      const fps = (frames * 1000) / (now - windowStart);
+      windowStart = now;
+      frames = 0;
+
+      if (!warmedUp) {
+        warmedUp = true;
+      } else if (fps >= LEVELS[level].fps * 0.8) {
+        strikes = 0; // a healthy window forgives earlier stutter
+      } else if (++strikes >= MAX_STRIKES) {
+        strikes = 0;
+        level += 1;
+        canvas.dataset.level = String(level);
+        repaint();
+      }
     };
 
-    raf = requestAnimationFrame(tick);
-    return () => cancelAnimationFrame(raf);
-  }, []);
+    raf = requestAnimationFrame(frame);
+    return () => {
+      cancelAnimationFrame(raf);
+      resizeObserver.disconnect();
+    };
+  }, [reducedMotion]);
 
-  const config = TIERS[tier];
-
-  // Regenerate the random paths when the tier's motion envelope changes. This
-  // only happens on the rare downgrade, so the slight re-seed is unnoticeable.
-  const glows = useMemo(() => {
-    return Array.from({ length: config.count }).map((_, i) => {
-      // 1. Create random motion paths covering the screen
-      const xPath = generateRandomPath(config.xRange, 8);
-      const yPath = generateRandomPath(config.yRange, 8);
-
-      // 2. Randomize timing so they don't move in sync
-      const duration = random(MIN_DURATION, MAX_DURATION);
-
-      // 3. Large negative delay for "pre-warming" (instant smooth movement)
-      const delay = -random(0, duration);
-
-      // Scale "breathing" is only enabled on capable tiers. On the low tier we
-      // animate position alone: combined with blur 0 the layer rasterizes once
-      // and the GPU simply re-composites the cached texture at a new offset.
-      const scaleAnim = config.animateScale
-        ? {
-            scale: config.breathe,
-            transition: {
-              scale: {
-                duration: duration * 0.8, // slightly faster than movement, organic feel
-                ease: 'easeInOut',
-                repeat: Infinity,
-                repeatType: 'loop' as const,
-                delay,
-              },
-            },
-          }
-        : null;
-
-      return {
-        id: i,
-        colorClass: `glow-${(i % 4) + 1}`, // Cycles through glow-1, glow-2, etc.
-        variants: {
-          initial: {
-            opacity: 0,
-            scale: config.animateScale ? 0.5 : 1,
-          },
-          animate: {
-            opacity: 1,
-            x: xPath,
-            y: yPath,
-            ...(scaleAnim ? { scale: scaleAnim.scale } : {}),
-            transition: {
-              x: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
-              y: { duration, ease: 'easeInOut', repeat: Infinity, repeatType: 'loop', delay },
-              ...(scaleAnim ? scaleAnim.transition : {}),
-              opacity: { duration: 2, ease: 'easeOut' }, // Entrance fade-in
-            },
-          },
-        },
-      };
-    });
-  }, [config.count, config.xRange, config.yRange, config.animateScale, config.breathe]);
-
-  // When blur is 0 we drop the filter entirely ('no-blur') rather than apply
-  // blur(0px) — even a zero-radius filter establishes a filter layer the GPU has
-  // to allocate and rasterize. The soft radial-gradient carries the glow look.
-  const blurClass = config.blur === 0 ? ' no-blur' : '';
-
-  return (
-    <div
-      className="aurora-container"
-      style={
-        {
-          '--glow-size': `${config.size}px`,
-          '--glow-blur': `${config.blur}px`,
-        } as CSSProperties
-      }
-    >
-      {config.animate
-        ? glows.map((glow) => (
-            <motion.div
-              key={glow.id}
-              // 'is-animated' carries `will-change`; the static fallback below
-              // omits it so it doesn't needlessly hold a GPU layer.
-              className={`aurora-glow is-animated${blurClass} ${glow.colorClass}`}
-              variants={glow.variants}
-              initial="initial"
-              animate="animate"
-            />
-          ))
-        : glows.map((glow) => (
-            // Static fallback: positioned and tinted by CSS, no per-frame work.
-            <div key={glow.id} className={`aurora-glow${blurClass} ${glow.colorClass}`} />
-          ))}
-
-      {/* The Dark Overlay */}
-      <div className="dark-overlay"></div>
-    </div>
-  );
+  return <canvas ref={canvasRef} className="aurora" aria-hidden="true" />;
 };
 
 export default Background;
