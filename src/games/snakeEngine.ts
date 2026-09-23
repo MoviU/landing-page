@@ -83,6 +83,18 @@ export function createGame(random = Math.random): GameState {
 // Queue a turn. The first steer of a fresh game also starts it.
 export function turn(state: GameState, dir: Direction): GameState {
   if (state.status === 'ready') {
+    // Starting back the way the snake faces would be a reversal step() drops,
+    // sending it the opposite way to the input. Turn it around instead: the
+    // tail becomes the head.
+    if (dir === OPPOSITE[state.dir]) {
+      return {
+        ...state,
+        status: 'running',
+        snake: [...state.snake].reverse(),
+        dir,
+        queue: [],
+      };
+    }
     return { ...state, status: 'running', queue: [dir] };
   }
   if (state.status !== 'running') return state;

@@ -256,7 +256,11 @@ function Snake() {
 
   const steer = useCallback(
     (dir: Direction) => {
-      gameRef.current = turn(gameRef.current, dir);
+      const next = turn(gameRef.current, dir);
+      // A snake turned around to start is a new body, not a move: show it in
+      // place rather than tweening every segment across the board.
+      if (next.snake !== gameRef.current.snake) prevRef.current = next;
+      gameRef.current = next;
       sync();
     },
     [sync]
@@ -284,6 +288,9 @@ function Snake() {
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
+      // Leave browser shortcuts alone: Alt+← is Back, Cmd/Ctrl+R reloads,
+      // Cmd/Ctrl+D bookmarks, and so on.
+      if (event.metaKey || event.ctrlKey || event.altKey) return;
       const dir =
         KEY_DIRECTIONS[event.key] ?? KEY_DIRECTIONS[event.key.toLowerCase()];
       if (dir) {
