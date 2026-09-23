@@ -1,0 +1,350 @@
+/* Arcade pages. Shares the landing page's tokens (--c-ink, --c-line, --g*),
+   so the palette switcher in the topbar re-tints these too. */
+
+.arcade-page {
+  display: flex;
+  flex-direction: column;
+  gap: clamp(24px, 4vw, 40px);
+  align-self: start;
+  width: 100%;
+}
+
+.arcade-head {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  align-items: flex-start;
+}
+
+.arcade-back {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--c-ink-faint);
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.arcade-back:hover {
+  color: var(--c-ink);
+}
+
+.arcade-title {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(38px, 6vw, 68px);
+  line-height: 1;
+  margin: 0;
+}
+
+.arcade-sub {
+  margin: 0;
+  max-width: 54ch;
+  color: var(--c-ink-dim);
+  font-size: 15px;
+  line-height: 1.55;
+}
+
+/* --- Arcade index --- */
+
+.game-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: clamp(16px, 2.4vw, 24px);
+}
+
+.game-card {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  padding: clamp(20px, 2.4vw, 28px);
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  background: var(--c-bg-card);
+  color: var(--c-ink);
+  text-decoration: none;
+  transition:
+    border-color 0.2s ease,
+    transform 0.2s ease,
+    background 0.2s ease;
+}
+
+a.game-card:hover {
+  transform: translateY(-2px);
+  border-color: var(--c-line-strong);
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.game-card--soon {
+  opacity: 0.45;
+}
+
+.game-art {
+  width: 100%;
+  max-width: 180px;
+  aspect-ratio: 6 / 5;
+  border-radius: 12px;
+  background: rgba(0, 0, 0, 0.28);
+  border: 1px solid var(--c-line);
+  padding: 6px;
+  box-sizing: border-box;
+}
+
+.game-card-body {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.game-card-body h2 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: 28px;
+  margin: 0;
+}
+
+.game-card-body p {
+  margin: 0;
+  color: var(--c-ink-dim);
+  font-size: 14px;
+  line-height: 1.55;
+}
+
+.game-card-cta {
+  margin-top: 6px;
+  font-size: 12px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: var(--c-accent);
+}
+
+.label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.22em;
+  color: var(--c-ink-faint);
+}
+
+/* A game page trades headline size for board size: the whole board should sit
+   above the fold on a laptop screen. */
+.arcade-page--game {
+  gap: clamp(18px, 2vw, 26px);
+}
+
+.arcade-page--game .arcade-title {
+  font-size: clamp(30px, 3.6vw, 44px);
+}
+
+/* --- Snake --- */
+
+.snake-layout {
+  display: grid;
+  grid-template-columns: minmax(0, auto) minmax(240px, 320px);
+  gap: clamp(20px, 3vw, 36px);
+  align-items: start;
+}
+
+.snake-stage {
+  display: flex;
+  flex-direction: column;
+  gap: 18px;
+  align-items: center;
+}
+
+.snake-board {
+  position: relative;
+  width: min(100%, 62vh, 520px);
+  aspect-ratio: 1;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 16px;
+  background: rgba(0, 0, 0, 0.32);
+  overflow: hidden;
+  /* Swipes belong to the game, not to page scrolling. */
+  touch-action: none;
+}
+
+.snake-canvas {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+
+.snake-overlay {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 20px;
+  box-sizing: border-box;
+  background: rgba(12, 2, 2, 0.72);
+  backdrop-filter: blur(3px);
+  -webkit-backdrop-filter: blur(3px);
+}
+
+.snake-overlay-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+  text-align: center;
+}
+
+.snake-overlay-card h2 {
+  font-family: 'Instrument Serif', serif;
+  font-style: italic;
+  font-weight: 400;
+  font-size: clamp(26px, 4vw, 36px);
+  margin: 0;
+}
+
+.snake-overlay-card p {
+  margin: 0 0 8px;
+  color: var(--c-ink-dim);
+  font-size: 14px;
+}
+
+/* --- Side panel --- */
+
+.snake-panel {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: clamp(18px, 2.2vw, 26px);
+  border: 1px solid var(--c-line);
+  border-radius: 18px;
+  background: var(--c-bg-card);
+}
+
+.snake-scores {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+}
+
+.snake-stat {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.snake-stat strong {
+  font-size: 34px;
+  font-weight: 400;
+  line-height: 1;
+  font-variant-numeric: tabular-nums;
+}
+
+.snake-actions {
+  display: flex;
+  gap: 10px;
+}
+
+.snake-actions .btn {
+  flex: 1 1 auto;
+  justify-content: center;
+}
+
+.snake-help {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding-top: 18px;
+  border-top: 1px solid var(--c-line);
+}
+
+.snake-help ul {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 9px;
+  font-size: 13px;
+  color: var(--c-ink-dim);
+  line-height: 1.5;
+}
+
+kbd {
+  display: inline-block;
+  min-width: 12px;
+  padding: 2px 6px;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 5px;
+  background: rgba(255, 255, 255, 0.05);
+  font-family: inherit;
+  font-size: 11px;
+  color: var(--c-ink);
+}
+
+/* --- Touch pad --- */
+
+.dpad {
+  display: none;
+  grid-template-columns: repeat(3, 56px);
+  grid-template-rows: repeat(2, 56px);
+  gap: 8px;
+  justify-content: center;
+}
+
+.dpad-key {
+  display: grid;
+  place-items: center;
+  border: 1px solid var(--c-line-strong);
+  border-radius: 14px;
+  background: rgba(255, 255, 255, 0.05);
+  color: var(--c-ink);
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+.dpad-key:active {
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.dpad-up {
+  grid-area: 1 / 2;
+}
+.dpad-left {
+  grid-area: 2 / 1;
+}
+.dpad-down {
+  grid-area: 2 / 2;
+}
+.dpad-right {
+  grid-area: 2 / 3;
+}
+
+/* Devices without a hover-capable pointer get the pad; everyone else has keys. */
+@media (pointer: coarse) {
+  .dpad {
+    display: grid;
+  }
+}
+
+@media (max-width: 900px) {
+  .snake-layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+  .snake-panel {
+    width: 100%;
+    box-sizing: border-box;
+  }
+  .snake-board {
+    width: min(100%, 520px);
+  }
+}
+
+@media (max-width: 720px) {
+  .game-grid {
+    grid-template-columns: 1fr;
+  }
+  .snake-help {
+    display: none; /* the pad and a swipe say it better on a phone */
+  }
+}

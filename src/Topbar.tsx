@@ -1,3 +1,6 @@
+import { Link } from './router';
+import { useRouter } from './routerContext';
+
 export type Palette = string[];
 
 type TopbarProps = {
@@ -24,12 +27,20 @@ function PaletteSwatch({
       className={`palette-swatch${active ? ' is-active' : ''}`}
       onClick={onClick}
       aria-label={`Set palette ${colors.join(' ')}`}
-      style={{ background: `linear-gradient(120deg, ${a} 0%, ${b} 33%, ${c} 66%, ${d} 100%)` }}
+      style={{
+        background: `linear-gradient(120deg, ${a} 0%, ${b} 33%, ${c} 66%, ${d} 100%)`,
+      }}
     />
   );
 }
 
-function AutoSwatch({ active, onClick }: { active: boolean; onClick: () => void }) {
+function AutoSwatch({
+  active,
+  onClick,
+}: {
+  active: boolean;
+  onClick: () => void;
+}) {
   return (
     <button
       type="button"
@@ -39,7 +50,13 @@ function AutoSwatch({ active, onClick }: { active: boolean; onClick: () => void 
       aria-pressed={active}
       title="Auto-cycle palettes"
     >
-      <svg width="11" height="11" viewBox="0 0 24 24" fill="none" aria-hidden="true">
+      <svg
+        width="11"
+        height="11"
+        viewBox="0 0 24 24"
+        fill="none"
+        aria-hidden="true"
+      >
         <path
           d="M12 2.5l2.2 6.3 6.3 2.2-6.3 2.2-2.2 6.3-2.2-6.3-6.3-2.2 6.3-2.2L12 2.5z"
           fill="currentColor"
@@ -62,7 +79,11 @@ function PaletteSwitcher({
   onToggleAuto,
 }: TopbarProps) {
   return (
-    <span className="palette-switch" role="radiogroup" aria-label="Background palette">
+    <span
+      className="palette-switch"
+      role="radiogroup"
+      aria-label="Background palette"
+    >
       <span className="palette-switch-label">Palette</span>
       <span className="palette-swatches">
         <AutoSwatch active={auto} onClick={onToggleAuto} />
@@ -80,9 +101,22 @@ function PaletteSwitcher({
 }
 
 function Topbar(props: TopbarProps) {
+  const { path } = useRouter();
+  const inArcade = path.startsWith('/games');
+
   return (
     <header className="topbar">
-      <div className="topbar-left">M.K — 2026</div>
+      <div className="topbar-left">
+        <Link className="topbar-mark" href="/">
+          M.K — 2026
+        </Link>
+        <Link
+          className={`topbar-nav${inArcade ? ' is-active' : ''}`}
+          href="/games"
+        >
+          Arcade
+        </Link>
+      </div>
       <PaletteSwitcher {...props} />
       <div className="topbar-right">
         <span className="dot-status">

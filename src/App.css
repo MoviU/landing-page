@@ -78,7 +78,36 @@ body {
 }
 
 .topbar-left {
+  display: flex;
+  align-items: center;
+  gap: 18px;
   letter-spacing: 0.18em;
+}
+
+.topbar-mark,
+.topbar-nav,
+.footer-link {
+  color: inherit;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
+
+.topbar-mark:hover,
+.topbar-nav:hover,
+.footer-link:hover {
+  color: var(--c-ink);
+}
+
+/* The nav link carries a hairline so it reads as somewhere to go, not a label */
+.topbar-nav {
+  padding-bottom: 2px;
+  border-bottom: 1px solid transparent;
+}
+
+.topbar-nav:hover,
+.topbar-nav.is-active {
+  border-bottom-color: var(--c-line-strong);
+  color: var(--c-ink);
 }
 
 .topbar-right {
@@ -389,6 +418,12 @@ body {
   color: var(--c-ink-faint);
 }
 
+/* Placeholder while a lazily-loaded route chunk arrives — reserves the row so
+   the topbar and footer don't jump. */
+.route-loading {
+  min-height: 50vh;
+}
+
 /* Title gradient — driven by the registered palette colors so it fades
    alongside the background when the palette changes. */
 .title-gradient {
@@ -412,6 +447,13 @@ body {
   }
   .topbar-right {
     display: none;
+  }
+  /* The palette switcher needs the width more than the wordmark does. */
+  .topbar-mark {
+    display: none;
+  }
+  .topbar-left {
+    gap: 10px;
   }
   .palette-switch-label {
     display: none;
