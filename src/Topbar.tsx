@@ -107,8 +107,8 @@ function Topbar(props: TopbarProps) {
   return (
     <header className="topbar">
       <div className="topbar-left">
-        <Link className="topbar-mark" href="/">
-          M.K — 2026
+        <Link className="topbar-mark" href="/" aria-label="Max Kachimov, home">
+          M<span className="topbar-mark-dot" aria-hidden="true" />K
         </Link>
         <Link
           className={`topbar-nav${inArcade ? ' is-active' : ''}`}
