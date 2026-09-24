@@ -80,7 +80,7 @@ function Hero({ showContent, onAnimationComplete, reducedMotion }: HeroProps) {
   return (
     <section className="hero">
       <p className="kicker rise-in" style={riseIn(GLIDE_DURATION_S + 0.05)}>
-        Software engineer, building quietly reliable systems in fintech &amp; medtech.
+        Software engineer, building reliable systems in fintech &amp; medtech.
       </p>
 
       <div ref={wordmarkRef} className="wordmark title-gradient" style={WORDMARK_FONT}>
