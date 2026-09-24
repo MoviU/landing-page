@@ -23,6 +23,16 @@ export const mixRgb = (from: Rgb, to: Rgb, t: number): Rgb => [
 
 export const rgbCss = ([r, g, b]: Rgb) => `rgb(${r}, ${g}, ${b})`;
 
+const WHITE: Rgb = [255, 255, 255];
+
+// Lighten a color toward white just enough that its luma (0-255, sRGB-weighted)
+// reaches `minLuma`. Colors already that bright pass through unchanged.
+export function liftRgb(color: Rgb, minLuma: number): Rgb {
+  const luma = 0.2126 * color[0] + 0.7152 * color[1] + 0.0722 * color[2];
+  if (luma >= minLuma) return color;
+  return mixRgb(color, WHITE, (minLuma - luma) / (255 - luma));
+}
+
 // The live palette colors App.tsx tweens onto the root element. Reading the
 // inline style (rather than getComputedStyle) is a plain map lookup with no
 // style recalc, so it's safe to call from an animation frame. Before the first

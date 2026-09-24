@@ -26,6 +26,8 @@
   --glow-2: #04477d;
   --glow-3: #17a370;
   --glow-4: #70277d;
+  /* The logo dot: --g2 lifted to a minimum lightness (see App.tsx). */
+  --dot: #17a370;
 }
 
 html, #root {
@@ -96,13 +98,13 @@ body {
   color: var(--c-ink);
 }
 
-/* The logo: M.K set in the wordmark face, its period swapped for the green
-   status dot. */
+/* The logo: M.K set in the wordmark face, its period swapped for a glowing
+   dot that follows the selected palette. */
 .topbar-mark {
   display: inline-flex;
   align-items: baseline;
   font-family: 'Skyer Monolite', sans-serif;
-  font-size: 22px;
+  font-size: 26px;
   line-height: 1;
   letter-spacing: 0;
   color: var(--c-ink);
@@ -114,8 +116,9 @@ body {
   height: 0.15em;
   margin: 0 0.07em;
   border-radius: 50%;
-  background: var(--c-accent);
-  box-shadow: 0 0 0.3em var(--c-accent);
+  background: var(--dot);
+  /* A tight core plus a wider halo, so it reads as lit rather than printed. */
+  box-shadow: 0 0 0.2em var(--dot), 0 0 0.6em var(--dot);
   transition: transform 0.2s ease;
 }
 

@@ -8,7 +8,7 @@ import Contact from './Contact';
 import Footer from './Footer';
 import { Link } from './router';
 import { useRouter } from './routerContext';
-import { mixRgb, rgbCss, toRgb } from './colors';
+import { liftRgb, mixRgb, rgbCss, toRgb } from './colors';
 
 // The games live in their own chunks: the landing page is the hot path and
 // shouldn't carry a game engine it may never run.
@@ -28,6 +28,10 @@ const PALETTES: Palette[] = [
 const AUTO_FIRST_DELAY_MS = 3000;
 const AUTO_INTERVAL_MS = 7000;
 const FADE_MS = 1800;
+// The logo's dot wears the palette's last wordmark color (--g2), lifted to at
+// least this luma so darker picks (monochrome's grey, sunset's red) still read
+// as a lit dot. The signature teal is already above it and passes unchanged.
+const DOT_MIN_LUMA = 130;
 
 const TITLES: Record<string, string> = {
   '/': 'Max Kachimov - official website',
@@ -138,6 +142,7 @@ function App() {
       root.setProperty('--g0', colors[0]);
       root.setProperty('--g1', colors[1]);
       root.setProperty('--g2', colors[2]);
+      root.setProperty('--dot', rgbCss(liftRgb(toRgb(colors[2]), DOT_MIN_LUMA)));
       displayedRef.current = colors;
     };
 
