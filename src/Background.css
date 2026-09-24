@@ -1,97 +1,18 @@
-/* AuroraBackground.css - Mobile Responsive */
+/* The aurora canvas (see Background.tsx / aurora.ts).
 
-/* --- Container Setup --- */
-.aurora-container {
-    /* Fixed so the aurora covers the viewport even while scrolling. On mobile
-       the stacked content is taller than one screen, so an absolute layer would
-       leave the lower half on a flat dark background. */
+   The bitmap is ~1/8 of the viewport and CSS stretches it to fill the screen;
+   the browser's default smooth upscaling is what softens the glows, so there's
+   no blur filter anywhere. Fixed so the aurora covers the viewport even while
+   scrolling — on mobile the stacked content is taller than one screen. */
+.aurora {
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-
-    background-color: #110606;
-    overflow: hidden;
+    display: block;
     z-index: 0;
-}
-
-/* --- Dark Overlay --- */
-.dark-overlay {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0, 0, 0, 0.2);
-    z-index: 5;
-}
-
-/* --- Base Glow Element Styling --- */
-.aurora-glow {
-    position: absolute;
-    border-radius: 50%;
-    opacity: 0.6;
-    z-index: 1;
-
-    /* Size and blur are driven by the active quality tier, set as CSS custom
-       properties on .aurora-container by Background.tsx. A runtime FPS monitor
-       lowers the tier on weak hardware, shrinking both the blob and the blur
-       kernel (the dominant GPU cost) so the effect stays smooth. */
-    width: var(--glow-size, 900px);
-    height: var(--glow-size, 900px);
-    filter: blur(var(--glow-blur, 70px));
-}
-
-/* Only promote layers that actually move. The static fallback drops the hint so
-   it doesn't pin GPU memory it has no use for. */
-.aurora-glow.is-animated {
-    will-change: transform, opacity;
-}
-
-/* Weak-GPU path: no blur convolution at all. The radial gradient's soft falloff
-   already reads as a glow, so we skip the most expensive operation entirely. */
-.aurora-glow.no-blur {
-    filter: none;
-}
-
-/* --- PHONE MEMORY CAP --- */
-/* iOS Safari has a hard per-tab GPU-memory cap and discards the page (dark
-   blank screen) when blurred animated layers exceed it. Clamp the blob size on
-   small screens regardless of the tier's pixel size; blur still comes from the
-   tier variable. Must follow the base rule so it wins at equal specificity. */
-@media (max-width: 767px) {
-    .aurora-glow {
-        width: 55vmax;
-        height: 55vmax;
-    }
-}
-
-/* --- Specific Glow Colors (Varied starting positions) --- */
-.glow-1 {
-    background: radial-gradient(circle, color-mix(in srgb, var(--glow-1) 70%, transparent) 0%, transparent 70%);
-    top: 10%;
-    left: 10%;
-    transform: translate(-50%, -50%);
-}
-
-.glow-2 {
-    background: radial-gradient(circle, color-mix(in srgb, var(--glow-2) 60%, transparent) 0%, transparent 70%);
-    bottom: 15%;
-    right: 20%;
-    transform: translate(50%, 50%);
-}
-
-.glow-3 {
-    background: radial-gradient(circle, color-mix(in srgb, var(--glow-3) 60%, transparent) 0%, transparent 70%);
-    top: 50%;
-    right: 50%;
-    transform: translate(0%, -50%);
-}
-
-.glow-4 {
-    background: radial-gradient(circle, color-mix(in srgb, var(--glow-4) 60%, transparent) 0%, transparent 70%);
-    top: 30%;
-    left: 70%;
-    transform: translate(-50%, -50%);
+    /* Own compositor layer, so a new canvas frame never re-rasters the page
+       content painted above it. */
+    will-change: transform;
 }

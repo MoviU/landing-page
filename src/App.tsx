@@ -1,12 +1,19 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
-import { MotionConfig, motion } from 'framer-motion';
-import type { ReactNode } from 'react';
+import { Suspense, lazy, useEffect, useMemo, useRef, useState } from 'react';
+import type { CSSProperties, ReactNode } from 'react';
 import './App.css';
 import Background from './Background';
 import Hero, { GLIDE_DURATION_S } from './Hero';
 import Topbar, { type Palette } from './Topbar';
 import Contact from './Contact';
 import Footer from './Footer';
+import { Link } from './router';
+import { useRouter } from './routerContext';
+import { liftRgb, mixRgb, rgbCss, toRgb } from './colors';
+
+// The games live in their own chunks: the landing page is the hot path and
+// shouldn't carry a game engine it may never run.
+const Arcade = lazy(() => import('./games/Arcade'));
+const Snake = lazy(() => import('./games/Snake'));
 
 // Each palette is 4 colors: the four aurora glows. The title gradient reuses
 // the first three. Index 0 is the site's signature maroon/blue/teal/purple.
@@ -21,27 +28,22 @@ const PALETTES: Palette[] = [
 const AUTO_FIRST_DELAY_MS = 3000;
 const AUTO_INTERVAL_MS = 7000;
 const FADE_MS = 1800;
+// The logo's dot wears the palette's last wordmark color (--g2), lifted to at
+// least this luma so darker picks (monochrome's grey, sunset's red) still read
+// as a lit dot. The signature teal is already above it and passes unchanged.
+const DOT_MIN_LUMA = 130;
 
-type Rgb = [number, number, number];
-
-// Accepts #rgb, #rrggbb, or rgb(...) and returns an [r, g, b] tuple.
-function toRgb(color: string): Rgb {
-  if (color.startsWith('rgb')) {
-    const [r, g, b] = color.match(/\d+/g)!.map(Number);
-    return [r, g, b];
-  }
-  const s = color.replace('#', '');
-  const hex = s.length === 3 ? s.replace(/./g, (c) => c + c) : s;
-  const n = parseInt(hex, 16);
-  return [(n >> 16) & 255, (n >> 8) & 255, n & 255];
-}
+const TITLES: Record<string, string> = {
+  '/': 'Max Kachimov - official website',
+  '/games': 'Arcade — Max Kachimov',
+  '/games/snake': 'Snake — Max Kachimov',
+};
 
 const easeInOut = (t: number) =>
   t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2;
 
-const lerp = (a: number, b: number, t: number) => Math.round(a + (b - a) * t);
-
 // Fade/slide-in wrapper for the content that appears after the hero intro.
+// A CSS animation (see .rise-in), so it runs on the compositor thread.
 function Reveal({
   delay,
   y = 0,
@@ -52,19 +54,43 @@ function Reveal({
   children: ReactNode;
 }) {
   return (
-    <motion.div
-      initial={{ opacity: 0, y }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.6, ease: 'easeOut', delay }}
+    <div
+      className="rise-in"
+      style={{ animationDelay: `${delay}s`, '--rise-from': `${y}px` } as CSSProperties}
     >
       {children}
-    </motion.div>
+    </div>
+  );
+}
+
+function NotFound() {
+  return (
+    <section className="cta-row">
+      <article className="cta-card">
+        <h2>Nothing here</h2>
+        <p>
+          That page doesn&rsquo;t exist &mdash; or it did once and has since
+          been tidied away.
+        </p>
+        <div className="actions">
+          <Link className="btn btn-primary" href="/">
+            Back home
+          </Link>
+          <Link className="btn btn-ghost" href="/games">
+            Visit the arcade
+          </Link>
+        </div>
+      </article>
+    </section>
   );
 }
 
 function App() {
-  // Honor the OS "reduce motion" setting: no auto-cycling, and palette changes
-  // snap instead of running a per-frame color tween.
+  const { path } = useRouter();
+
+  // Honor the OS "reduce motion" setting: no auto-cycling, palette changes snap
+  // instead of running a per-frame color tween, the aurora holds a still frame
+  // and the wordmark skips its glide. Read once here and passed down.
   const prefersReducedMotion = useMemo(
     () =>
       typeof window !== 'undefined' &&
@@ -72,10 +98,19 @@ function App() {
     []
   );
 
-  const [showContent, setShowContent] = useState(false);
+  // The wordmark intro only belongs on a fresh landing at the root. Deep-link
+  // straight into a game and the chrome is simply there.
+  const [landedOnHome] = useState(() => path === '/');
+  const [showContent, setShowContent] = useState(!landedOnHome);
+  const revealDelay = landedOnHome ? GLIDE_DURATION_S : 0;
+
   const [paletteIndex, setPaletteIndex] = useState(0);
   const [autoPalette, setAutoPalette] = useState(!prefersReducedMotion);
   const palette = PALETTES[paletteIndex];
+
+  useEffect(() => {
+    document.title = TITLES[path] ?? 'Max Kachimov';
+  }, [path]);
 
   // Auto: cycle palettes on an interval. First transition fires after 3s so the
   // cross-fade is visible right away, then every 7s.
@@ -107,12 +142,13 @@ function App() {
       root.setProperty('--g0', colors[0]);
       root.setProperty('--g1', colors[1]);
       root.setProperty('--g2', colors[2]);
+      root.setProperty('--dot', rgbCss(liftRgb(toRgb(colors[2]), DOT_MIN_LUMA)));
       displayedRef.current = colors;
     };
 
     // Reduced motion: skip the per-frame cross-fade entirely and snap.
     if (prefersReducedMotion) {
-      apply(to.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`));
+      apply(to.map(rgbCss));
       return;
     }
 
@@ -120,12 +156,7 @@ function App() {
     const step = (now: number) => {
       const t = Math.min(1, (now - start) / FADE_MS);
       const e = easeInOut(t);
-      apply(
-        from.map(
-          ([r, g, b], i) =>
-            `rgb(${lerp(r, to[i][0], e)}, ${lerp(g, to[i][1], e)}, ${lerp(b, to[i][2], e)})`
-        )
-      );
+      apply(from.map((color, i) => rgbCss(mixRgb(color, to[i], e))));
       if (t < 1) raf = requestAnimationFrame(step);
     };
     raf = requestAnimationFrame(step);
@@ -133,10 +164,7 @@ function App() {
     // requestAnimationFrame is paused while the tab is hidden, so guarantee the
     // final colors land regardless. When visible, the rAF tween reaches the same
     // values first and this is a harmless no-op.
-    const settle = window.setTimeout(
-      () => apply(to.map(([r, g, b]) => `rgb(${r}, ${g}, ${b})`)),
-      FADE_MS + 50
-    );
+    const settle = window.setTimeout(() => apply(to.map(rgbCss)), FADE_MS + 50);
 
     return () => {
       cancelAnimationFrame(raf);
@@ -150,12 +178,14 @@ function App() {
     setPaletteIndex(index);
   };
 
+  const isHome = path === '/';
+
   return (
-    <MotionConfig reducedMotion="user">
-      <Background />
+    <>
+      <Background reducedMotion={prefersReducedMotion} />
       <main className="page">
         {showContent && (
-          <Reveal delay={GLIDE_DURATION_S} y={-8}>
+          <Reveal delay={revealDelay} y={-8}>
             <Topbar
               palettes={PALETTES}
               paletteIndex={paletteIndex}
@@ -166,24 +196,39 @@ function App() {
           </Reveal>
         )}
 
-        <Hero
-          showContent={showContent}
-          onAnimationComplete={() => setShowContent(true)}
-        />
+        {isHome ? (
+          <>
+            <Hero
+              showContent={showContent}
+              onAnimationComplete={() => setShowContent(true)}
+              reducedMotion={prefersReducedMotion}
+            />
 
-        {showContent && (
-          <Reveal delay={GLIDE_DURATION_S + 0.2} y={12}>
-            <Contact />
-          </Reveal>
+            {showContent && (
+              <Reveal delay={revealDelay + 0.2} y={12}>
+                <Contact />
+              </Reveal>
+            )}
+          </>
+        ) : (
+          <Suspense fallback={<div className="route-loading" />}>
+            {path === '/games' ? (
+              <Arcade />
+            ) : path === '/games/snake' ? (
+              <Snake />
+            ) : (
+              <NotFound />
+            )}
+          </Suspense>
         )}
 
         {showContent && (
-          <Reveal delay={GLIDE_DURATION_S + 0.35}>
+          <Reveal delay={revealDelay + 0.35}>
             <Footer />
           </Reveal>
         )}
       </main>
-    </MotionConfig>
+    </>
   );
 }
 
